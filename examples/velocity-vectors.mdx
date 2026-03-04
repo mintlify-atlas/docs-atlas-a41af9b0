@@ -1,0 +1,222 @@
+---
+title: "Velocity Vectors"
+description: "Display character velocity with VectorDisplay2D"
+---
+
+## Overview
+
+Visualizing velocity is one of the most common uses for VectorDisplay2D. This example shows how to display a character's velocity vector in real-time, making it easy to debug movement mechanics and understand motion behavior.
+
+## Basic Setup
+
+Here's a complete example of a CharacterBody2D script with velocity visualization:
+
+<CodeGroup>
+
+```gdscript player.gd
+extends CharacterBody2D
+
+const SPEED = 300.0
+const JUMP_VELOCITY = -400.0
+
+# Get the gravity from the project settings
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+
+func _physics_process(delta):
+	# Add gravity
+	if not is_on_floor():
+		velocity.y += gravity * delta
+
+	# Handle jump
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+
+	# Get input direction
+	var direction = Input.get_axis("ui_left", "ui_right")
+	if direction:
+		velocity.x = direction * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+
+	move_and_slide()
+```
+
+</CodeGroup>
+
+## Scene Tree Structure
+
+Set up your scene hierarchy like this:
+
+```
+CharacterBody2D (player.gd attached)
+├── CollisionShape2D
+├── Sprite2D
+└── VectorDisplay2D  ← Add this node
+```
+
+## Configuring VectorDisplay2D
+
+Select the VectorDisplay2D node and configure these properties in the Inspector:
+
+### Target Properties
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| **Target Node** | `..` (parent) | Points to the CharacterBody2D |
+| **Target Property** | `velocity` | The Vector2 property to display |
+| **Settings** | Create new VectorDisplaySettings | Click to create a new settings resource |
+
+### Settings Configuration
+
+Create a new `VectorDisplaySettings` resource and configure it:
+
+<CodeGroup>
+
+```gdscript Basic Settings
+# Show
+show_vectors = true
+show_axes = false  # Set to true to see X/Y components
+
+# Rendering
+vector_scale = 0.5      # Scale down for better visibility
+width = 3.0             # Thicker line for clarity
+length_mode = "Normal"  # Shows actual velocity magnitude
+arrowhead = true        # Show direction clearly
+arrowhead_size = 3.0
+
+# Colors
+main_color = Color.YELLOW  # Classic velocity color
+```
+
+```gdscript With Axes
+# Show
+show_vectors = true
+show_axes = true  # Display X and Y components
+
+# Rendering
+vector_scale = 0.5
+width = 3.0
+length_mode = "Normal"
+arrowhead = true
+arrowhead_size = 3.0
+
+# Colors
+main_color = Color.YELLOW
+x_axis_color = Color.RED    # Horizontal velocity
+y_axis_color = Color.GREEN  # Vertical velocity (gravity/jump)
+```
+
+</CodeGroup>
+
+## Advanced: Speed-Based Dimming
+
+Make the vector fade when the character slows down:
+
+```gdscript Settings with Dimming
+# Show
+show_vectors = true
+show_axes = false
+
+# Rendering
+vector_scale = 0.5
+width = 3.0
+
+# Colors
+main_color = Color.YELLOW
+
+# Color Dimming
+dimming = true
+dimming_speed = 2.0
+fallback_color = Color(0.2, 0.2, 0.2, 0.5)  # Dark gray when stopped
+normalized_dimming_type = "Absolute"  # Dim based on actual speed
+```
+
+This creates a visual feedback system where:
+- **Fast movement** = Bright yellow vector
+- **Slowing down** = Vector fades to gray
+- **Stopped** = Nearly invisible gray vector
+
+## Tips for Best Visualization
+
+<Card title="Scaling" icon="arrows-maximize">
+  Adjust `vector_scale` based on your game's velocity values. If velocities are in the hundreds, use 0.1-0.5. For smaller values, use 1.0-2.0.
+</Card>
+
+<Card title="Clamping" icon="ruler">
+  For high-speed games, set `length_mode` to "Clamp" and `max_length` to 150 to prevent vectors from extending off-screen.
+</Card>
+
+<Card title="Runtime Toggle" icon="eye">
+  Press `Shift + V` during gameplay to toggle vector visibility. Perfect for debugging without cluttering the screen.
+</Card>
+
+<Card title="Axes for Platformers" icon="grid">
+  Enable `show_axes` in platformer games to separately visualize horizontal movement (X axis, red) and gravity/jumping (Y axis, green).
+</Card>
+
+## Complete Example Scene
+
+Here's a full working example with optimal settings:
+
+```gdscript Complete Setup
+# player.gd
+extends CharacterBody2D
+
+const SPEED = 300.0
+const JUMP_VELOCITY = -400.0
+
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+
+func _physics_process(delta):
+	if not is_on_floor():
+		velocity.y += gravity * delta
+
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+
+	var direction = Input.get_axis("ui_left", "ui_right")
+	if direction:
+		velocity.x = direction * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+
+	move_and_slide()
+```
+
+**VectorDisplay2D Settings:**
+
+```
+Target Node: .. (CharacterBody2D)
+Target Property: "velocity"
+
+Settings Resource:
+├── show_vectors: true
+├── show_axes: true
+├── vector_scale: 0.5
+├── width: 3.0
+├── length_mode: "Clamp"
+├── max_length: 200.0
+├── arrowhead: true
+├── main_color: Yellow
+├── x_axis_color: Red
+└── y_axis_color: Green
+```
+
+## Use Cases
+
+- **Debug character movement** - See exactly how fast your character is moving
+- **Visualize physics** - Understand how gravity, friction, and acceleration affect motion
+- **Test jump mechanics** - See the velocity arc during jumps
+- **Identify movement bugs** - Spot unexpected velocity changes instantly
+- **Balance game feel** - Adjust speed values while seeing real-time feedback
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Acceleration Vectors" icon="gauge-high" href="/examples/acceleration-vectors">
+    Learn to display multiple vectors like velocity and acceleration together
+  </Card>
+  <Card title="Custom Styling" icon="palette" href="/examples/custom-styling">
+    Explore advanced visual effects like rainbow mode and creative color schemes
+  </Card>
+</CardGroup>

@@ -1,0 +1,153 @@
+---
+title: Basic Setup
+description: Complete walkthrough for setting up your first VectorDisplay2D node
+---
+
+This guide walks you through creating and configuring your first VectorDisplay2D node to visualize vectors in your Godot 2D game.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+- Godot 4.0 or later installed
+- Vector Display 2D addon enabled in your project
+- A scene with a node that has a Vector2 property (e.g., a CharacterBody2D with velocity)
+
+## Step-by-Step Setup
+
+<Steps>
+  <Step title="Create the VectorDisplay2D node">
+    In your scene tree, add a new `VectorDisplay2D` node as a child of the node whose vector you want to display.
+
+    For example, if you want to display the velocity of a player character:
+    1. Right-click on your `Player` (CharacterBody2D) node
+    2. Select **Add Child Node**
+    3. Search for `VectorDisplay2D` and add it
+
+    <Tip>
+      The VectorDisplay2D node automatically positions itself relative to its parent, making it easy to visualize vectors that originate from specific objects.
+    </Tip>
+  </Step>
+
+  <Step title="Configure the target node">
+    With the VectorDisplay2D node selected, configure the **Target Node** in the Inspector:
+
+    ```gdscript
+    # In the Inspector:
+    Target Node: (drag your parent node here, or leave empty to auto-assign to parent)
+    ```
+
+    If you leave `target_node` empty, it will automatically use the parent node.
+
+    <Note>
+      The target node is the node that contains the Vector2 property you want to visualize.
+    </Note>
+  </Step>
+
+  <Step title="Set the target property">
+    Specify which Vector2 property to display in the **Target Property** field:
+
+    ```gdscript
+    # In the Inspector:
+    Target Property: "velocity"  # or "linear_velocity", "position", etc.
+    ```
+
+    Common Vector2 properties to visualize:
+    - `velocity` - Movement speed and direction
+    - `linear_velocity` - Physics velocity for RigidBody2D
+    - `direction` - Custom directional vectors
+    - Any custom Vector2 variable in your script
+
+    <Warning>
+      The property must be of type **Vector2**. If you enter an invalid property name or non-Vector2 type, you'll see an error in the console.
+    </Warning>
+  </Step>
+
+  <Step title="Create a settings resource">
+    Create a new `VectorDisplaySettings` resource to customize how your vectors are displayed:
+
+    1. In the Inspector, click the dropdown next to **Settings**
+    2. Select **New VectorDisplaySettings**
+    3. Click on the resource to edit its properties
+
+    The default settings provide:
+    - Yellow colored main vector
+    - Red X-axis, Green Y-axis
+    - Scale of 1.0
+    - Width of 2 pixels
+    - Arrowhead enabled
+
+    <Tip>
+      You can save this settings resource as a `.tres` file to reuse it across multiple VectorDisplay2D nodes or share it between projects.
+    </Tip>
+  </Step>
+
+  <Step title="Test the display">
+    Run your scene and watch the vectors appear!
+
+    - The yellow arrow shows your vector in real-time
+    - Press **Shift + V** to toggle visibility on/off during gameplay
+    - Move your character or trigger the vector change to see it update live
+
+    ```gdscript
+    # Example player script that works with VectorDisplay2D
+    extends CharacterBody2D
+
+    func _physics_process(delta):
+        var direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+        velocity = direction * 300.0
+        move_and_slide()
+        # VectorDisplay2D automatically visualizes the velocity!
+    ```
+  </Step>
+</Steps>
+
+## Quick Start Example
+
+Here's a complete minimal setup:
+
+```gdscript
+# Scene structure:
+# Player (CharacterBody2D)
+# └── VectorDisplay2D
+#     ├── Target Node: Player
+#     ├── Target Property: "velocity"
+#     └── Settings: (new VectorDisplaySettings resource)
+
+# Player.gd
+extends CharacterBody2D
+
+const SPEED = 300.0
+
+func _physics_process(delta):
+    var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+    velocity = input_dir * SPEED
+    move_and_slide()
+```
+
+Run the scene and move around with arrow keys - you'll see a yellow arrow showing your velocity direction and magnitude!
+
+## Next Steps
+
+Now that you have a basic setup working:
+
+- Learn about [customization options](/guides/customization) to change colors, scale, and rendering modes
+- Explore [runtime configuration](/guides/runtime-configuration) to modify vectors during gameplay
+- Check out [keyboard shortcuts](/guides/keyboard-shortcuts) to customize the toggle key
+- Create reusable [presets](/guides/presets) for different visualization styles
+
+## Troubleshooting
+
+**Vector not appearing?**
+- Verify the target property is a Vector2 type
+- Check that the vector has a non-zero value
+- Ensure `show_vectors` is enabled in settings
+- Press Shift + V to toggle visibility
+
+**Error: "Target property is not a Vector2"**
+- Double-check the property name spelling
+- Ensure the property exists and is exported or public
+- Verify it's a Vector2, not Vector3 or other type
+
+**Performance issues?**
+- The addon automatically optimizes rendering by only redrawing when the vector changes
+- For many vectors, consider reducing the update frequency in your game logic

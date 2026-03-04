@@ -1,0 +1,245 @@
+---
+title: VectorDisplaySettings
+description: Resource class for configuring vector display appearance and behavior
+---
+
+## Overview
+
+The `VectorDisplaySettings` class extends `Resource` and provides comprehensive configuration options for customizing how vectors are rendered. It includes settings for visibility, rendering modes, colors, and color dimming effects.
+
+## Class Definition
+
+```gdscript
+class_name VectorDisplaySettings extends Resource
+```
+
+## Constants
+
+<ParamField path="SHORTCUT" type="InputEventKey">
+  Preloaded shortcut key for toggling vector visibility. Loaded from `res://addons/vector_display_2d/display_shortcut.tres`.
+</ParamField>
+
+<ParamField path="DIMMING_SPEED_CORRECTION" type="int" default="10">
+  Internal constant for correcting dimming speed calculations.
+</ParamField>
+
+## Properties
+
+### Show Group
+
+<ParamField path="show_vectors" type="bool" default="true">
+  Show or hide all vector displays. This is the master visibility toggle.
+</ParamField>
+
+<ParamField path="show_axes" type="bool" default="false">
+  Shows X and Y component vectors separately. When enabled, displays decomposed vector components in addition to the main vector.
+</ParamField>
+
+### Rendering Group
+
+<ParamField path="vector_scale" type="float" default="1">
+  Change vectors size for visualization. This doesn't change the actual vector values, only how they're displayed.
+  
+  **Range:** 0.05 to 100+ (exponential, can exceed maximum)
+  
+  **Use cases:**
+  - Scale down large velocity values for better visibility
+  - Scale up small forces to make them visible
+</ParamField>
+
+<ParamField path="width" type="float" default="2">
+  Line width in pixels for all vector lines.
+  
+  **Range:** 0.1 to 10+ (exponential, can exceed maximum)
+</ParamField>
+
+<ParamField path="length_mode" type="String" default="Normal">
+  Change the displayed vector length. Transformations don't change the actual vector values.
+  
+  **Options:**
+  - `"Normal"`: Display vectors at their actual length (scaled by `vector_scale`)
+  - `"Clamp"`: Limit vector length to `max_length`
+  - `"Normalize"`: Normalize vectors and scale to `max_length`
+</ParamField>
+
+<ParamField path="max_length" type="float" default="100">
+  Maximum length for vector clamping or normalizing. Only used when `length_mode` is set to "Clamp" or "Normalize".
+  
+  **Range:** 0.1 to 1000+ (exponential, can exceed maximum)
+</ParamField>
+
+<ParamField path="arrowhead" type="bool" default="true">
+  Add an arrowhead at the end of vectors for better direction visualization.
+</ParamField>
+
+<ParamField path="arrowhead_size" type="float" default="3.0">
+  Arrowhead size multiplier. Each unit is equivalent to 2 times the vector width.
+  
+  **Range:** 0.1 to 10+ (exponential, can exceed maximum)
+  
+  **Example:** With `width = 2` and `arrowhead_size = 3.0`, the arrowhead will be 12 pixels in size.
+</ParamField>
+
+<ParamField path="pivot_mode" type="String" default="Normal">
+  Change the pivot point for the main vector.
+  
+  **Options:**
+  - `"Normal"`: Vector starts from origin (0, 0)
+  - `"Centered"`: Vector scales symmetrically around its midpoint
+</ParamField>
+
+<ParamField path="axes_pivot_mode" type="String" default="Same">
+  Keep same pivot point for axes or override them.
+  
+  **Options:**
+  - `"Same"`: Use the same pivot mode as the main vector (recommended)
+  - `"Normal"`: Force axes to start from origin
+  - `"Centered"`: Force axes to be centered
+  
+  **Note:** Highly recommended to keep in "Same" for consistent visualization.
+</ParamField>
+
+### Colors Group
+
+<ParamField path="main_color" type="Color" default="Color.YELLOW">
+  Color for the main vector. Default is yellow (RGB: 1, 1, 0).
+</ParamField>
+
+<ParamField path="x_axis_color" type="Color" default="Color.RED">
+  Color for the X component of the vector when `show_axes` is enabled. Default is red.
+</ParamField>
+
+<ParamField path="y_axis_color" type="Color" default="Color.GREEN">
+  Color for the Y component of the vector when `show_axes` is enabled. Default is green.
+</ParamField>
+
+<ParamField path="rainbow" type="bool" default="false">
+  Change main vector color based on its angle using HSV color space. Creates a rainbow effect where the color represents the vector's direction.
+  
+  **Note:** Does not apply to axes colors.
+</ParamField>
+
+### Color Dimming Group
+
+<ParamField path="dimming" type="bool" default="false">
+  Enables color dimming effect. When enabled, vector colors fade toward the `fallback_color` as the vector length decreases.
+</ParamField>
+
+<ParamField path="dimming_speed" type="float" default="1">
+  Controls how quickly colors dim as vectors get shorter. Higher values cause faster dimming.
+  
+  **Range:** 0.01 to 10+ (can exceed maximum)
+</ParamField>
+
+<ParamField path="fallback_color" type="Color" default="Color.BLACK">
+  The color that vectors fade toward when they get short. Default is black.
+</ParamField>
+
+<ParamField path="normalized_dimming_type" type="String" default="None">
+  Apply dimming based on different vector length calculations. Useful when using "Normalize" length mode.
+  
+  **Options:**
+  - `"None"`: No special dimming calculation
+  - `"Absolute"`: Dim based on the actual vector value (with scale applied)
+  - `"Visual"`: Dim based on the displayed visual length (after length mode transformation)
+</ParamField>
+
+## Usage Examples
+
+### Basic Settings
+
+```gdscript
+# Create basic settings
+var settings = VectorDisplaySettings.new()
+settings.show_vectors = true
+settings.main_color = Color.CYAN
+settings.width = 3
+```
+
+### Normalized Vectors with Rainbow Colors
+
+```gdscript
+var settings = VectorDisplaySettings.new()
+
+# Normalize all vectors to same length
+settings.length_mode = "Normalize"
+settings.max_length = 100
+
+# Show direction with rainbow colors
+settings.rainbow = true
+
+# Show component breakdown
+settings.show_axes = true
+```
+
+### Physics Debugging with Dimming
+
+```gdscript
+var settings = VectorDisplaySettings.new()
+
+# Scale down large force values
+settings.vector_scale = 0.05
+
+# Dim small forces to focus on significant ones
+settings.dimming = true
+settings.dimming_speed = 2.0
+settings.fallback_color = Color(0.2, 0.2, 0.2)  # Dark gray
+
+# Use absolute dimming to see actual force magnitude
+settings.normalized_dimming_type = "Absolute"
+```
+
+### Centered Pivot Display
+
+```gdscript
+var settings = VectorDisplaySettings.new()
+
+# Center the vector for balanced visualization
+settings.pivot_mode = "Centered"
+settings.axes_pivot_mode = "Same"
+
+# Thick lines for better visibility
+settings.width = 4
+settings.arrowhead_size = 4.0
+```
+
+### Custom Color Scheme
+
+```gdscript
+var settings = VectorDisplaySettings.new()
+
+# Custom colors
+settings.main_color = Color.ORANGE
+settings.x_axis_color = Color.PURPLE
+settings.y_axis_color = Color.AQUA
+
+# Show axes with custom colors
+settings.show_axes = true
+```
+
+### Saving Settings as Resource
+
+```gdscript
+# Create and configure settings
+var settings = VectorDisplaySettings.new()
+settings.vector_scale = 2.0
+settings.rainbow = true
+settings.show_axes = true
+
+# Save as reusable resource
+var error = ResourceSaver.save(settings, "res://my_vector_settings.tres")
+if error == OK:
+    print("Settings saved successfully")
+
+# Load in another scene
+var loaded_settings = load("res://my_vector_settings.tres")
+vector_display.settings = loaded_settings
+```
+
+## Notes
+
+- All settings emit the `changed` signal when modified, triggering automatic redraws
+- Settings can be created via code or saved as `.tres` resource files for reuse
+- The `@export_range` annotations provide UI sliders in the Godot editor
+- Color dimming works best with `dimming_speed` values between 0.5 and 5.0
+- Rainbow mode overrides `main_color` but not axis colors

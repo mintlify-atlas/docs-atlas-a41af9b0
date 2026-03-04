@@ -1,97 +1,186 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+mode: "custom"
 ---
 
-## Setting up
+<div className="relative overflow-hidden dark:bg-[#0f1117] bg-white">
+  {/* Hero Section */}
+  <div className="relative py-20 lg:py-24 bg-gradient-to-br dark:from-[#1a1d27] dark:to-[#0f1117] from-gray-50 to-white border-b dark:border-[#27272a] border-gray-200">
+    <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-3xl">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold dark:text-gray-100 text-gray-900 mb-6">
+          Visualize Vectors in Your Godot Games
+        </h1>
+        <p className="text-lg sm:text-xl dark:text-gray-400 text-gray-600 mb-8 max-w-2xl">
+          A powerful Godot 4 addon for displaying 2D vectors directly in your game with extensive customization, excellent performance, and zero hassle.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a
+            href="/quickstart"
+            className="inline-flex items-center px-6 py-3 rounded-lg font-semibold text-white transition-all"
+            style={{ backgroundColor: '#94cb04' }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#7da603'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#94cb04'}
+          >
+            Get Started
+            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+          <a
+            href="/api/vector-display-2d"
+            className="inline-flex items-center px-6 py-3 rounded-lg font-semibold dark:text-gray-100 text-gray-900 dark:bg-[#242838] bg-gray-100 dark:hover:bg-[#2d3142] hover:bg-gray-200 transition-colors border dark:border-[#27272a] border-gray-200"
+          >
+            API Reference
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 
-Get your documentation site up and running in minutes.
+  {/* Quick Start Section */}
+  <div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold dark:text-white text-gray-900 mb-3">Quick Start</h2>
+    <p className="text-base dark:text-gray-400 text-gray-600 mb-8">Get up and running in minutes</p>
+    
+    <Steps>
+      <Step title="Download the addon">
+        Clone or download the repository from GitHub and copy the `addons/vector_display_2d` folder into your Godot project's `addons` directory.
+        
+        ```bash
+        git clone https://github.com/Andresit1524/vector_display_2d.git
+        ```
+      </Step>
+      
+      <Step title="Enable the plugin">
+        Open your Godot project, go to **Project → Project Settings → Plugins**, and enable **Vector Display 2D**.
+      </Step>
+      
+      <Step title="Add the VectorDisplay2D node">
+        Create a new `VectorDisplay2D` node in your scene, set the target node and property (e.g., `velocity`), and customize with a `VectorDisplaySettings` resource. Press **Shift + V** during runtime to toggle visibility.
+        
+        ```gdscript
+        # Your character script
+        extends CharacterBody2D
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+        var velocity = Vector2(100, -50)
+        ```
+        
+        <Note>
+          The VectorDisplay2D node will automatically visualize any Vector2 property on your target node.
+        </Note>
+      </Step>
+    </Steps>
+  </div>
 
-## Make it yours
+  {/* Features Section */}
+  <div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold dark:text-white text-gray-900 mb-3">Core Features</h2>
+    <p className="text-base dark:text-gray-400 text-gray-600 mb-8">Everything you need for vector visualization</p>
+    
+    <CardGroup cols={3}>
+      <Card
+        title="Real-time Visualization"
+        icon="eye"
+        href="/concepts/how-it-works"
+      >
+        Display vectors like velocity and acceleration directly in your game as you play.
+      </Card>
+      <Card
+        title="Rich Customization"
+        icon="palette"
+        href="/guides/customization"
+      >
+        Rainbow colors, dimming effects, arrowheads, pivot modes, and more.
+      </Card>
+      <Card
+        title="Performance Optimized"
+        icon="gauge-high"
+        href="/concepts/how-it-works"
+      >
+        Smart redraw detection ensures minimal overhead even with many vectors.
+      </Card>
+      <Card
+        title="Runtime Configuration"
+        icon="sliders"
+        href="/guides/runtime-configuration"
+      >
+        Modify settings on the fly without restarting your game.
+      </Card>
+      <Card
+        title="Shareable Presets"
+        icon="floppy-disk"
+        href="/guides/presets"
+      >
+        Save and share VectorDisplaySettings resources across projects.
+      </Card>
+      <Card
+        title="Keyboard Shortcuts"
+        icon="keyboard"
+        href="/guides/keyboard-shortcuts"
+      >
+        Toggle visibility with Shift + V or customize your own shortcuts.
+      </Card>
+    </CardGroup>
+  </div>
 
-Design a docs site that looks great and empowers your users.
+  {/* Documentation Navigation */}
+  <div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold dark:text-white text-gray-900 mb-3">Explore the Documentation</h2>
+    <p className="text-base dark:text-gray-400 text-gray-600 mb-8">Dive deeper into specific topics</p>
+    
+    <CardGroup cols={2}>
+      <Card
+        title="Core Concepts"
+        icon="book-open"
+        href="/concepts/how-it-works"
+      >
+        Understand how Vector Display 2D works under the hood.
+      </Card>
+      <Card
+        title="Guides"
+        icon="map"
+        href="/guides/basic-setup"
+      >
+        Step-by-step tutorials for common use cases and configurations.
+      </Card>
+      <Card
+        title="Examples"
+        icon="code"
+        href="/examples/velocity-vectors"
+      >
+        Real-world examples showing velocity, acceleration, and custom styling.
+      </Card>
+      <Card
+        title="API Reference"
+        icon="terminal"
+        href="/api/vector-display-2d"
+      >
+        Complete API documentation for all classes and properties.
+      </Card>
+    </CardGroup>
+  </div>
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+  {/* Closing CTA */}
+  <div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+    <div className="dark:bg-[#1a1d27] bg-gray-50 dark:border-[#27272a] border-gray-200 border rounded-2xl p-8 lg:p-12 text-center">
+      <h2 className="text-3xl font-semibold dark:text-white text-gray-900 mb-4">
+        Ready to visualize your vectors?
+      </h2>
+      <p className="text-lg dark:text-gray-400 text-gray-600 mb-6 max-w-2xl mx-auto">
+        Install Vector Display 2D today and start debugging and understanding your game physics with ease.
+      </p>
+      <a
+        href="/installation"
+        className="inline-flex items-center px-6 py-3 rounded-lg font-semibold text-white transition-all"
+        style={{ backgroundColor: '#94cb04' }}
+        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#7da603'}
+        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#94cb04'}
+      >
+        Install Now
+        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>

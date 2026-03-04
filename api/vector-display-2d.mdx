@@ -1,0 +1,199 @@
+---
+title: VectorDisplay2D
+description: Main node class for displaying 2D vectors with visual feedback
+---
+
+## Overview
+
+The `VectorDisplay2D` class extends `Node2D` and provides real-time visualization of Vector2 properties from any node. It renders vectors with customizable colors, scaling, and display modes.
+
+## Class Definition
+
+```gdscript
+extends Node2D
+```
+
+## Properties
+
+<ParamField path="target_node" type="Node" default="null">
+  The node whose vector property will be visualized. If not set, automatically assigns to the parent node on ready.
+</ParamField>
+
+<ParamField path="target_property" type="String" default="velocity">
+  Name of the Vector2 attribute or variable in the target node's script to display.
+</ParamField>
+
+<ParamField path="settings" type="VectorDisplaySettings" default="null" required>
+  Vector display settings resource. Create your own using a `VectorDisplaySettings` resource to customize appearance and behavior.
+</ParamField>
+
+## Internal Variables
+
+<ParamField path="current_vector" type="Vector2" default="Vector2.ZERO">
+  Stores the current processed vector value for rendering.
+</ParamField>
+
+<ParamField path="current_raw_length" type="float" default="0.0">
+  Stores the raw length of the vector before any length mode transformations.
+</ParamField>
+
+## Methods
+
+### _ready()
+
+```gdscript
+func _ready() -> void
+```
+
+Called when the node enters the scene tree. Validates targets and settings, and connects the settings change signal to trigger redraws.
+
+**Behavior:**
+- Validates target node, property, and settings using `VectorDisplayFunctions.check_targets_and_settings()`
+- Connects settings resource's `changed` signal to `queue_redraw()` for automatic visual updates
+
+---
+
+### _process()
+
+```gdscript
+func _process(_delta) -> void
+```
+
+Called every frame. Retrieves the vector from the target property and updates the display if changed.
+
+**Parameters:**
+- `_delta`: Time elapsed since the previous frame (unused)
+
+**Behavior:**
+- Returns early if target node is invalid
+- Gets vector from `target_property` and applies `vector_scale`
+- Applies length mode transformation via `VectorDisplayFunctions.apply_lenght_mode()`
+- Only triggers redraw when vector or length changes (performance optimization)
+
+---
+
+### _draw()
+
+```gdscript
+func _draw() -> void
+```
+
+Handles all vector rendering. Called automatically when `queue_redraw()` is triggered.
+
+**Behavior:**
+- Returns early if `settings.show_vectors` is false
+- Calculates colors based on rainbow and dimming settings
+- Renders main vector line with arrowhead
+- Renders X and Y axis components if `settings.show_axes` is true
+- Uses antialiasing for smooth lines
+
+---
+
+### _draw_arrowhead()
+
+```gdscript
+func _draw_arrowhead(start: Vector2, position: Vector2, color: Color) -> void
+```
+
+Draws an arrowhead at the end of a vector.
+
+**Parameters:**
+- `start`: Starting position of the vector line
+- `position`: End position where the arrowhead should be drawn
+- `color`: Color to render the arrowhead
+
+**Behavior:**
+- Returns early if `settings.arrowhead` is false
+- Calculates arrowhead size based on `settings.arrowhead_size` and line width
+- Hides arrowhead if vector is too small to display it properly
+- Renders triangular arrowhead rotated 30 degrees on each side
+
+---
+
+### _unhandled_key_input()
+
+```gdscript
+func _unhandled_key_input(event: InputEvent) -> void
+```
+
+Detects keyboard shortcut to toggle vector visibility.
+
+**Parameters:**
+- `event`: Input event to check against the shortcut
+
+**Behavior:**
+- Checks if event matches the display shortcut using `VectorDisplayFunctions.check_shortcut()`
+- Marks input as handled to prevent event propagation and echo errors
+
+## Usage Examples
+
+### Basic Setup
+
+```gdscript
+# Add VectorDisplay2D as a child of the node you want to visualize
+extends CharacterBody2D
+
+var velocity = Vector2.ZERO
+
+func _ready():
+    # The VectorDisplay2D node will automatically use parent as target
+    # and display the 'velocity' property by default
+    pass
+```
+
+### Custom Target and Property
+
+```gdscript
+# In your scene script
+func _ready():
+    var vector_display = VectorDisplay2D.new()
+    var settings = VectorDisplaySettings.new()
+    
+    vector_display.target_node = $Player
+    vector_display.target_property = "direction"
+    vector_display.settings = settings
+    
+    add_child(vector_display)
+```
+
+### Displaying Force Vectors
+
+```gdscript
+extends RigidBody2D
+
+var applied_force = Vector2.ZERO
+
+func _ready():
+    var force_display = VectorDisplay2D.new()
+    var settings = VectorDisplaySettings.new()
+    
+    settings.main_color = Color.ORANGE
+    settings.vector_scale = 0.1  # Scale down large force values
+    settings.show_axes = true
+    
+    force_display.target_property = "applied_force"
+    force_display.settings = settings
+    
+    add_child(force_display)
+
+func _physics_process(delta):
+    applied_force = Vector2(100, -50)
+    apply_force(applied_force)
+```
+
+### Runtime Visibility Toggle
+
+```gdscript
+# Toggle visibility programmatically
+func toggle_debug_display():
+    $VectorDisplay2D.settings.show_vectors = !$VectorDisplay2D.settings.show_vectors
+
+# Or use the built-in keyboard shortcut (configured in settings.SHORTCUT)
+```
+
+## Notes
+
+- The VectorDisplay2D node automatically positions itself at the target node's location due to transform inheritance
+- Performance is optimized to only redraw when the vector actually changes
+- The node validates all settings on `_ready()` and provides helpful error messages in the console
+- If no target node is specified, it automatically uses the parent node

@@ -1,0 +1,542 @@
+---
+title: 'Settings Resource'
+description: 'Understanding VectorDisplaySettings and all configuration options'
+---
+
+## Overview
+
+`VectorDisplaySettings` is a custom `Resource` class that stores all configuration for how vectors are displayed. Using a resource instead of direct properties provides powerful benefits.
+
+```gdscript vector_display_settings.gd:1-2
+@icon("res://addons/vector_display_2d/icon.svg")
+class_name VectorDisplaySettings extends Resource
+```
+
+<Info>
+Settings are organized into export groups: Show, Rendering, Colors, and Color dimming.
+</Info>
+
+## Why Use Resources?
+
+Resources provide several advantages over direct node properties:
+
+### Shareability
+
+Multiple `VectorDisplay2D` nodes can reference the same settings resource:
+
+```gdscript
+# All three visualizers use the same configuration
+$VectorDisplay1.settings = preload("res://my_vector_settings.tres")
+$VectorDisplay2.settings = preload("res://my_vector_settings.tres")
+$VectorDisplay3.settings = preload("res://my_vector_settings.tres")
+```
+
+Changing the resource updates all nodes simultaneously.
+
+### Runtime Configuration
+
+Resources can be created and modified at runtime:
+
+```gdscript
+var custom_settings = VectorDisplaySettings.new()
+custom_settings.main_color = Color.CYAN
+custom_settings.vector_scale = 2.0
+$VectorDisplay2D.settings = custom_settings
+```
+
+### Automatic Change Signals
+
+Resources emit a `changed` signal when any property is modified:
+
+```gdscript vector_display_2d.gd:22
+settings.changed.connect(queue_redraw)
+```
+
+This enables automatic redrawing without manual signal connections for each property.
+
+<Accordion title="How the changed signal works">
+Godot automatically emits the `changed` signal when any `@export` property on a `Resource` is modified, either in the editor or at runtime. The VectorDisplay2D node connects to this signal once in `_ready()`, and then any settings modification automatically triggers a visual update.
+</Accordion>
+
+## Show Settings
+
+Controls visibility of the visualization.
+
+### show_vectors
+
+```gdscript vector_display_settings.gd:12
+@export var show_vectors: bool = true
+```
+
+Master toggle for all vector displays.
+
+**Usage:**
+- Toggle at runtime to hide/show visualization
+- Can be controlled by the keyboard shortcut
+- Checked first in `_draw()` for early return
+
+```gdscript
+# Toggle visibility at runtime
+settings.show_vectors = false
+```
+
+### show_axes
+
+```gdscript vector_display_settings.gd:14
+@export var show_axes: bool = false
+```
+
+Show X and Y component vectors alongside the main vector.
+
+**Default:** `false`
+
+<Info>
+Enabling axes helps visualize vector decomposition, useful for understanding movement in each direction independently.
+</Info>
+
+## Rendering Settings
+
+Controls how vectors are drawn and transformed.
+
+### vector_scale
+
+```gdscript vector_display_settings.gd:20
+@export_range(0.05, 100, 0.05, "exp", "or_greater") var vector_scale: float = 1
+```
+
+Visual scaling multiplier for vector length.
+
+**Range:** 0.05 to 100+ (exponential slider)
+**Default:** 1.0
+
+<Note>
+This scaling is purely visual and doesn't affect the actual vector values. Applied in `_process()` before rendering.
+</Note>
+
+**Example:**
+```gdscript
+# Make vectors appear twice as long
+settings.vector_scale = 2.0
+
+# Make small vectors more visible
+settings.vector_scale = 10.0
+```
+
+### width
+
+```gdscript vector_display_settings.gd:23
+@export_range(0.1, 10, 0.1, "exp", "or_greater") var width: float = 2
+```
+
+Line thickness in pixels.
+
+**Range:** 0.1 to 10+ (exponential slider)
+**Default:** 2.0
+
+### length_mode
+
+```gdscript vector_display_settings.gd:26
+@export_enum("Normal", "Clamp", "Normalize") var length_mode: String = "Normal"
+```
+
+Controls how vector length is displayed.
+
+**Options:**
+- **Normal** - Display actual vector length (scaled)
+- **Clamp** - Limit maximum length to `max_length`
+- **Normalize** - Always show at exactly `max_length`
+
+**Implementation:**
+```gdscript vector_display_functions.gd:24-30
+static func apply_lenght_mode(vector, settings: VectorDisplaySettings):
+    match settings.length_mode:
+        "Clamp": return vector.limit_length(settings.max_length)
+        "Normalize": return vector.normalized() * settings.max_length
+        "Normal": return vector
+```
+
+<Accordion title="When to use each mode">
+**Normal** - Default mode, shows true vector magnitude
+
+**Clamp** - Useful when vectors can become extremely large but you want to see direction. Examples:
+- High-speed physics objects
+- Uncapped velocity systems
+- Preventing visual overflow
+
+**Normalize** - Shows only direction, magnitude is constant. Examples:
+- Directional indicators
+- Movement input visualization
+- Comparing angles between different vectors
+</Accordion>
+
+### max_length
+
+```gdscript vector_display_settings.gd:29
+@export_range(0.1, 1000, 0.1, "exp", "or_greater") var max_length: float = 100
+```
+
+Maximum length used for Clamp and Normalize modes.
+
+**Range:** 0.1 to 1000+ (exponential slider)
+**Default:** 100.0
+
+### arrowhead
+
+```gdscript vector_display_settings.gd:32
+@export var arrowhead: bool = true
+```
+
+Show arrowhead at the end of vectors to indicate direction.
+
+**Default:** `true`
+
+<Info>
+Arrowheads automatically hide when vectors become very small to prevent visual clutter.
+</Info>
+
+### arrowhead_size
+
+```gdscript vector_display_settings.gd:35
+@export_range(0.1, 10, 0.1, "exp", "or_greater") var arrowhead_size: float = 3.0
+```
+
+Arrowhead size multiplier.
+
+**Range:** 0.1 to 10+ (exponential slider)
+**Default:** 3.0
+
+**Calculation:**
+```gdscript vector_display_2d.gd:70
+var actual_size := settings.width * settings.arrowhead_size * 2
+```
+
+Each unit equals 2× the line width.
+
+### pivot_mode
+
+```gdscript vector_display_settings.gd:38
+@export_enum("Normal", "Centered") var pivot_mode: String = "Normal"
+```
+
+Controls the vector origin point.
+
+**Options:**
+- **Normal** - Vector starts from origin (0, 0)
+- **Centered** - Vector is centered at origin
+
+**Implementation:**
+```gdscript vector_display_functions.gd:78-85
+match settings.pivot_mode:
+    "Normal":
+        current_vector.begin = Vector2.ZERO
+        current_vector.end = vector
+    "Centered":
+        current_vector.begin = - vector / 2
+        current_vector.end = vector / 2
+```
+
+<Accordion title="Visual comparison">
+**Normal mode:**
+```
+      → vector
+    O────────▶
+    origin
+```
+
+**Centered mode:**
+```
+       vector
+    ◀────O────▶
+       origin
+```
+</Accordion>
+
+### axes_pivot_mode
+
+```gdscript vector_display_settings.gd:41
+@export_enum("Same", "Normal", "Centered") var axes_pivot_mode: String = "Same"
+```
+
+Pivot mode specifically for component axes.
+
+**Options:**
+- **Same** - Use same pivot mode as main vector
+- **Normal** - Force Normal mode for axes
+- **Centered** - Force Centered mode for axes
+
+**Default:** `"Same"` (recommended)
+
+<Note>
+Keeping this at "Same" is highly recommended for consistent visualization. Override only for specific visual effects.
+</Note>
+
+## Color Settings
+
+Controls the color scheme for vectors and components.
+
+### main_color
+
+```gdscript vector_display_settings.gd:47
+@export var main_color: Color = Color.YELLOW
+```
+
+Color for the main vector.
+
+**Default:** Yellow
+
+### x_axis_color
+
+```gdscript vector_display_settings.gd:50
+@export var x_axis_color: Color = Color.RED
+```
+
+Color for the X component when `show_axes` is enabled.
+
+**Default:** Red
+
+### y_axis_color
+
+```gdscript vector_display_settings.gd:53
+@export var y_axis_color: Color = Color.GREEN
+```
+
+Color for the Y component when `show_axes` is enabled.
+
+**Default:** Green
+
+<Info>
+The RGB color scheme (Red=X, Green=Y, Blue=Z) follows common 3D graphics conventions and will extend naturally when 3D support is added.
+</Info>
+
+### rainbow
+
+```gdscript vector_display_settings.gd:59
+@export var rainbow: bool = false
+```
+
+Dynamically color the main vector based on its angle.
+
+**Default:** `false`
+
+**Implementation:**
+```gdscript vector_display_functions.gd:46-51
+if settings.rainbow:
+    var angle: float = vector.angle()
+    if angle < 0: angle += TAU
+    
+    colors.main = Color.from_hsv(angle / TAU, 1.0, 1.0)
+```
+
+The angle is converted to HSV hue (0-1 range), creating a full spectrum:
+- 0° (right) = Red
+- 90° (up) = Cyan
+- 180° (left) = Green  
+- 270° (down) = Magenta
+
+<Accordion title="Rainbow vs main_color">
+When `rainbow = true`, the dynamically calculated color overrides `main_color`. The axis colors (`x_axis_color`, `y_axis_color`) are not affected by rainbow mode.
+</Accordion>
+
+## Color Dimming Settings
+
+Advanced color effects based on vector magnitude.
+
+### dimming
+
+```gdscript vector_display_settings.gd:65
+@export var dimming: bool = false
+```
+
+Enable color dimming based on vector length.
+
+**Default:** `false`
+
+<Info>
+Dimming makes vectors fade toward a fallback color as they get shorter, providing visual feedback about magnitude.
+</Info>
+
+### dimming_speed
+
+```gdscript vector_display_settings.gd:68
+@export_range(0.01, 10, 0.01, "or_greater") var dimming_speed: float = 1
+```
+
+Controls how quickly colors dim.
+
+**Range:** 0.01 to 10+
+**Default:** 1.0
+
+**Calculation:**
+```gdscript vector_display_functions.gd:60-62
+var dimming_value := 1.0
+if not is_zero_approx(length):
+    dimming_value = clampf(settings.dimming_speed * DIMMING_SPEED_CORRECTION / length, 0.0, 1.0)
+```
+
+Higher values dim faster (at longer lengths), lower values dim slower (only very short vectors dim).
+
+### fallback_color
+
+```gdscript vector_display_settings.gd:71
+@export var fallback_color: Color = Color.BLACK
+```
+
+The color vectors fade toward when dimming.
+
+**Default:** Black
+
+**Application:**
+```gdscript vector_display_functions.gd:64-67
+colors.x = colors.x.lerp(settings.fallback_color, dimming_value)
+colors.y = colors.y.lerp(settings.fallback_color, dimming_value)
+colors.main = colors.main.lerp(settings.fallback_color, dimming_value)
+```
+
+### normalized_dimming_type
+
+```gdscript vector_display_settings.gd:74
+@export_enum("None", "Absolute", "Visual") var normalized_dimming_type: String = "None"
+```
+
+Controls how dimming interacts with Normalize length mode.
+
+**Options:**
+- **None** - Disable dimming when using Normalize mode
+- **Absolute** - Dim based on actual vector magnitude (before normalization)
+- **Visual** - Dim based on displayed length (always at max_length, so no dimming)
+
+**Default:** `"None"`
+
+<Accordion title="Why this setting exists">
+When using Normalize length mode, all vectors are displayed at the same length. Without this setting, dimming would either:
+
+1. Not work at all (all vectors same visual length)
+2. Always show the same dimming level
+
+By setting to "Absolute", dimming uses the **raw vector length** (stored separately in `current_raw_length`) instead of the normalized display length, allowing you to see both consistent direction visualization AND magnitude feedback through color.
+</Accordion>
+
+**Implementation:**
+```gdscript vector_display_functions.gd:54-58
+if settings.dimming and (not settings.length_mode == "Normalize" or settings.normalized_dimming_type != "None"):
+    var length: float = vector.length()
+    match settings.normalized_dimming_type:
+        "Absolute": length = current_raw_length
+        "Visual": length = vector.length()
+```
+
+## Constants
+
+### SHORTCUT
+
+```gdscript vector_display_settings.gd:5
+const SHORTCUT: InputEventKey = preload("res://addons/vector_display_2d/display_shortcut.tres")
+```
+
+Preloaded keyboard shortcut resource for toggling visibility.
+
+### DIMMING_SPEED_CORRECTION
+
+```gdscript vector_display_settings.gd:6
+const DIMMING_SPEED_CORRECTION := 10
+```
+
+Internal multiplier to make dimming speed values more intuitive.
+
+## How Settings Trigger Redraws
+
+The settings resource uses Godot's built-in `Resource.changed` signal:
+
+```gdscript vector_display_2d.gd:22
+settings.changed.connect(queue_redraw)
+```
+
+**Flow:**
+1. Any `@export` property is modified (editor or runtime)
+2. Godot automatically emits `changed` signal
+3. Connected `queue_redraw()` is called
+4. Vector is redrawn on next frame with new settings
+
+<Info>
+This automatic system means you never need to manually trigger redraws when changing settings - just modify the properties and the visualization updates instantly.
+</Info>
+
+## Creating Custom Settings
+
+### In the Editor
+
+1. Right-click in FileSystem
+2. Create New Resource
+3. Search for `VectorDisplaySettings`
+4. Configure properties in Inspector
+5. Save as `.tres` file
+
+### At Runtime
+
+```gdscript
+func create_custom_visualizer():
+    var settings = VectorDisplaySettings.new()
+    settings.vector_scale = 2.0
+    settings.rainbow = true
+    settings.show_axes = true
+    settings.width = 3.0
+    
+    $VectorDisplay2D.settings = settings
+```
+
+### Duplicating Settings
+
+```gdscript
+# Create a modified copy
+var new_settings = original_settings.duplicate()
+new_settings.main_color = Color.CYAN
+```
+
+<Note>
+Using `duplicate()` creates an independent copy. Modifying the duplicate won't affect the original or any nodes using it.
+</Note>
+
+## Example Configurations
+
+### Debug Velocity
+
+```gdscript
+var debug_settings = VectorDisplaySettings.new()
+debug_settings.main_color = Color.YELLOW
+debug_settings.show_axes = true
+debug_settings.vector_scale = 1.0
+debug_settings.arrowhead = true
+```
+
+### Rainbow Direction Indicator
+
+```gdscript
+var direction_settings = VectorDisplaySettings.new()
+direction_settings.length_mode = "Normalize"
+direction_settings.max_length = 50.0
+direction_settings.rainbow = true
+direction_settings.width = 4.0
+```
+
+### Dimming Speed Indicator
+
+```gdscript
+var speed_settings = VectorDisplaySettings.new()
+speed_settings.main_color = Color.GREEN
+speed_settings.dimming = true
+speed_settings.dimming_speed = 2.0
+speed_settings.fallback_color = Color(0.2, 0.2, 0.2)
+speed_settings.vector_scale = 3.0
+```
+
+## Best Practices
+
+1. **Share resources** - Use the same settings across multiple visualizers for consistency
+2. **Create presets** - Save common configurations as `.tres` files
+3. **Use dimming for feedback** - Helps distinguish active vs idle states
+4. **Rainbow for angles** - Great for showing rotation or aiming direction
+5. **Axes for learning** - Enable `show_axes` when teaching vector decomposition
+
+<Note>
+Settings can be modified at any time without performance concerns - the smart redraw system ensures efficient updates.
+</Note>

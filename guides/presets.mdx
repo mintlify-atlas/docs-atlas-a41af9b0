@@ -1,0 +1,389 @@
+---
+title: Presets
+description: Create, save, and share reusable VectorDisplaySettings configurations
+---
+
+Presets allow you to save VectorDisplaySettings configurations as `.tres` resource files, making it easy to reuse, share, and organize different visualization styles across your projects.
+
+## Why Use Presets?
+
+Presets are valuable for:
+
+- **Consistency**: Apply the same style across multiple vector displays
+- **Organization**: Separate debug, gameplay, and presentation configurations
+- **Sharing**: Share configurations with team members or the community
+- **Rapid testing**: Quickly switch between different visualization modes
+- **Project templates**: Maintain a library of common styles
+
+## Creating Your First Preset
+
+<Steps>
+  <Step title="Create a VectorDisplaySettings resource">
+    In your VectorDisplay2D node's Inspector:
+
+    1. Click the dropdown next to **Settings**
+    2. Select **New VectorDisplaySettings**
+    3. Configure all properties as desired (colors, scale, width, etc.)
+  </Step>
+
+  <Step title="Save as a resource file">
+    With the settings resource selected:
+
+    1. Click the resource menu (three dots) or right-click the resource
+    2. Choose **Save** or **Save As...**
+    3. Navigate to your desired location (e.g., `res://presets/`)
+    4. Name your preset (e.g., `velocity_debug.tres`)
+    5. Click **Save**
+
+    <Tip>
+      Create a dedicated `res://presets/` or `res://vector_presets/` folder to organize all your preset files.
+    </Tip>
+  </Step>
+
+  <Step title="Reuse the preset">
+    To apply the preset to another VectorDisplay2D node:
+
+    1. Select the target VectorDisplay2D node
+    2. Click the dropdown next to **Settings**
+    3. Choose **Load**
+    4. Select your saved `.tres` file
+
+    Or simply drag the `.tres` file from FileSystem onto the Settings property.
+  </Step>
+</Steps>
+
+## Preset Examples
+
+Here are some useful preset configurations:
+
+### Debug Preset
+
+High-visibility vectors with axes for detailed debugging.
+
+```gdscript
+# velocity_debug.tres
+# Configuration:
+show_vectors = true
+show_axes = true
+vector_scale = 1.0
+width = 3.0
+length_mode = "Normal"
+arrowhead = true
+arrowhead_size = 4.0
+pivot_mode = "Normal"
+
+main_color = Color(1, 1, 0, 1)      # Yellow
+x_axis_color = Color(1, 0, 0, 1)    # Red
+y_axis_color = Color(0, 1, 0, 1)    # Green
+rainbow = false
+
+dimming = false
+```
+
+### Gameplay Preset
+
+Minimal, unobtrusive vectors for in-game visualization.
+
+```gdscript
+# gameplay_minimal.tres
+show_vectors = true
+show_axes = false
+vector_scale = 0.5
+width = 2.0
+length_mode = "Clamp"
+max_length = 100
+arrowhead = true
+arrowhead_size = 3.0
+pivot_mode = "Normal"
+
+main_color = Color(0, 1, 1, 0.5)    # Semi-transparent cyan
+rainbow = false
+
+dimming = true
+dimming_speed = 1.0
+fallback_color = Color(0, 0, 0, 0)  # Fade to transparent
+```
+
+### Rainbow Preset
+
+Colorful, angle-based visualization.
+
+```gdscript
+# rainbow_vectors.tres
+show_vectors = true
+show_axes = false
+vector_scale = 1.0
+width = 4.0
+length_mode = "Normalize"
+max_length = 50
+arrowhead = true
+arrowhead_size = 5.0
+pivot_mode = "Centered"
+
+main_color = Color.WHITE  # Overridden by rainbow
+rainbow = true
+
+dimming = true
+dimming_speed = 1.5
+fallback_color = Color(0.1, 0.1, 0.1)
+normalized_dimming_type = "Absolute"
+```
+
+### Presentation Preset
+
+Bold, high-contrast vectors for screenshots and demos.
+
+```gdscript
+# presentation_bold.tres
+show_vectors = true
+show_axes = true
+vector_scale = 0.75
+width = 5.0
+length_mode = "Clamp"
+max_length = 150
+arrowhead = true
+arrowhead_size = 6.0
+pivot_mode = "Normal"
+
+main_color = Color(1, 0.5, 0, 1)    # Orange
+x_axis_color = Color(1, 0, 0.5, 1)  # Pink-red
+y_axis_color = Color(0.5, 1, 0, 1)  # Lime green
+rainbow = false
+
+dimming = false
+```
+
+## Organizing Presets
+
+### Recommended Folder Structure
+
+```
+res://
+├── addons/
+│   └── vector_display_2d/
+├── presets/
+│   ├── debug/
+│   │   ├── velocity_debug.tres
+│   │   ├── force_debug.tres
+│   │   └── position_debug.tres
+│   ├── gameplay/
+│   │   ├── player_vectors.tres
+│   │   └── enemy_vectors.tres
+│   └── presentation/
+│       ├── screenshot_mode.tres
+│       └── tutorial_mode.tres
+└── scenes/
+```
+
+### Naming Conventions
+
+Use descriptive names that indicate:
+- **Purpose**: `debug_`, `gameplay_`, `presentation_`
+- **Vector type**: `velocity_`, `force_`, `acceleration_`
+- **Visual style**: `rainbow_`, `minimal_`, `bold_`
+
+Examples:
+- `debug_velocity_with_axes.tres`
+- `gameplay_minimal_cyan.tres`
+- `presentation_rainbow_centered.tres`
+
+## Using Presets in Code
+
+You can load and apply presets programmatically:
+
+### Preload Presets
+
+```gdscript
+extends CharacterBody2D
+
+# Preload preset resources
+const PRESET_DEBUG = preload("res://presets/debug/velocity_debug.tres")
+const PRESET_GAMEPLAY = preload("res://presets/gameplay/player_vectors.tres")
+const PRESET_HIDDEN = preload("res://presets/hidden.tres")
+
+@onready var vector_display = $VectorDisplay2D
+
+func _ready():
+    apply_preset(PRESET_GAMEPLAY)
+
+func apply_preset(preset: VectorDisplaySettings):
+    vector_display.settings = preset
+```
+
+### Load Presets Dynamically
+
+```gdscript
+func load_preset(path: String):
+    var preset = load(path) as VectorDisplaySettings
+    if preset:
+        vector_display.settings = preset
+    else:
+        push_error("Failed to load preset: " + path)
+
+func _ready():
+    load_preset("res://presets/debug/velocity_debug.tres")
+```
+
+### Switch Presets at Runtime
+
+```gdscript
+enum DebugMode { HIDDEN, MINIMAL, FULL }
+
+var debug_mode = DebugMode.MINIMAL
+
+const PRESETS = {
+    DebugMode.HIDDEN: preload("res://presets/hidden.tres"),
+    DebugMode.MINIMAL: preload("res://presets/gameplay/minimal.tres"),
+    DebugMode.FULL: preload("res://presets/debug/full_debug.tres")
+}
+
+func set_debug_mode(mode: DebugMode):
+    debug_mode = mode
+    vector_display.settings = PRESETS[mode]
+
+func _input(event):
+    if event.is_action_pressed("cycle_debug_mode"):
+        debug_mode = (debug_mode + 1) % 3
+        set_debug_mode(debug_mode)
+```
+
+## Creating Preset Variations
+
+### Base Preset Pattern
+
+Create a base preset and modify specific properties:
+
+```gdscript
+# Create base preset: res://presets/base_debug.tres
+# Then create variations in code:
+
+const BASE_DEBUG = preload("res://presets/base_debug.tres")
+
+func create_red_variant():
+    var red_preset = BASE_DEBUG.duplicate()
+    red_preset.main_color = Color.RED
+    vector_display.settings = red_preset
+
+func create_scaled_variant(scale: float):
+    var scaled_preset = BASE_DEBUG.duplicate()
+    scaled_preset.vector_scale = scale
+    vector_display.settings = scaled_preset
+```
+
+<Warning>
+  When using `duplicate()`, changes affect only that instance. To save variations permanently, use the Inspector's Save As feature.
+</Warning>
+
+## Sharing Presets
+
+### Exporting Presets
+
+To share presets with others:
+
+<Steps>
+  <Step title="Locate the .tres file">
+    Find your preset file in the FileSystem dock (e.g., `res://presets/my_preset.tres`).
+  </Step>
+
+  <Step title="Copy to shared location">
+    Right-click the file and select **Show in FileSystem** to open the folder, then copy the `.tres` file.
+  </Step>
+
+  <Step title="Share the file">
+    Share via:
+    - Git repository
+    - Cloud storage (Dropbox, Google Drive)
+    - Direct file transfer
+    - Community forums (Godot Asset Library, GitHub, etc.)
+  </Step>
+</Steps>
+
+### Importing Presets
+
+To use someone else's preset:
+
+1. Copy the `.tres` file into your project (e.g., `res://presets/`)
+2. Right-click in FileSystem and select **Refresh** or restart Godot
+3. Load the preset in your VectorDisplay2D node
+
+### Version Compatibility
+
+<Note>
+  VectorDisplaySettings resources are compatible across Godot 4.x versions. However, if the addon updates with new properties, older presets will use default values for missing properties.
+</Note>
+
+## Advanced: Preset Libraries
+
+For large projects, create a preset manager:
+
+```gdscript
+# res://scripts/vector_preset_library.gd
+class_name VectorPresetLibrary extends Resource
+
+enum PresetType {
+    DEBUG,
+    GAMEPLAY,
+    PRESENTATION,
+    CUSTOM
+}
+
+const PRESETS = {
+    PresetType.DEBUG: {
+        "velocity": preload("res://presets/debug/velocity_debug.tres"),
+        "force": preload("res://presets/debug/force_debug.tres"),
+        "acceleration": preload("res://presets/debug/acceleration_debug.tres")
+    },
+    PresetType.GAMEPLAY: {
+        "player": preload("res://presets/gameplay/player_vectors.tres"),
+        "enemy": preload("res://presets/gameplay/enemy_vectors.tres")
+    },
+    PresetType.PRESENTATION: {
+        "screenshot": preload("res://presets/presentation/screenshot_mode.tres"),
+        "tutorial": preload("res://presets/presentation/tutorial_mode.tres")
+    }
+}
+
+static func get_preset(type: PresetType, name: String) -> VectorDisplaySettings:
+    if PRESETS.has(type) and PRESETS[type].has(name):
+        return PRESETS[type][name]
+    push_error("Preset not found: %s / %s" % [PresetType.keys()[type], name])
+    return null
+```
+
+Usage:
+
+```gdscript
+# In your game scripts
+func _ready():
+    var preset = VectorPresetLibrary.get_preset(
+        VectorPresetLibrary.PresetType.DEBUG,
+        "velocity"
+    )
+    vector_display.settings = preset
+```
+
+## Tips and Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Save Early, Save Often" icon="floppy-disk">
+    Save preset configurations as you experiment. You can always delete unused presets later.
+  </Card>
+
+  <Card title="Document Your Presets" icon="book">
+    Add comments in your code or create a README explaining what each preset is for.
+  </Card>
+
+  <Card title="Version Control" icon="code-branch">
+    Commit preset files to Git so your team can access and update them.
+  </Card>
+
+  <Card title="Test Before Sharing" icon="vial">
+    Verify presets work in different scenarios before sharing with others.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+- Combine presets with [runtime configuration](/guides/runtime-configuration) for dynamic switching
+- Explore all [customization options](/guides/customization) to fine-tune your presets
+- Set up [keyboard shortcuts](/guides/keyboard-shortcuts) to toggle between preset modes

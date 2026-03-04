@@ -1,0 +1,324 @@
+---
+title: 'VectorDisplay2D Node'
+description: 'Deep dive into the main visualization node and its properties'
+---
+
+## Overview
+
+The `VectorDisplay2D` node is the core component of the addon. It extends `Node2D` and provides real-time visualization of `Vector2` properties from any node in your scene.
+
+<Info>
+This is a child node that visualizes vectors from its parent or any specified target node.
+</Info>
+
+## Exported Properties
+
+The node exposes three key properties in the Godot Inspector:
+
+### target_node
+
+```gdscript vector_display_2d.gd:5
+@export var target_node: Node
+```
+
+The node whose property you want to visualize.
+
+**Behavior:**
+- If not set, automatically uses the parent node
+- Validated in `_ready()` to ensure it exists
+- Checked each frame for validity using `is_instance_valid()`
+
+<Note>
+Leaving `target_node` empty is the recommended approach when visualizing the parent node's vectors. This makes the addon work out-of-the-box.
+</Note>
+
+**Example use cases:**
+- Visualize a CharacterBody2D's velocity
+- Show a RigidBody2D's linear velocity
+- Display custom movement vectors from player scripts
+
+### target_property
+
+```gdscript vector_display_2d.gd:7
+@export var target_property: String = "velocity"
+```
+
+The name of the `Vector2` property or variable to display.
+
+**Default:** `"velocity"` (works with CharacterBody2D and RigidBody2D)
+
+**Requirements:**
+- Must be a valid property name on the target node
+- Property must be of type `Vector2`
+- Can be built-in properties or custom script variables
+
+<Accordion title="Example: Custom property">
+If you have a player script with a custom vector:
+
+```gdscript
+extends CharacterBody2D
+
+var aim_direction := Vector2.ZERO
+
+func _process(delta):
+    aim_direction = (get_global_mouse_position() - global_position).normalized()
+```
+
+Set `target_property` to `"aim_direction"` to visualize it.
+</Accordion>
+
+### settings
+
+```gdscript vector_display_2d.gd:9
+@export var settings: VectorDisplaySettings
+```
+
+A `VectorDisplaySettings` resource containing all visual configuration.
+
+**Features:**
+- Shared across multiple VectorDisplay2D nodes
+- Modifiable at runtime
+- Automatically triggers redraw on changes
+- Must be set (no default value)
+
+<Note>
+Settings are covered in detail in the [Settings Resource](/concepts/settings-resource) page.
+</Note>
+
+## Internal Variables
+
+The node maintains two internal state variables:
+
+```gdscript vector_display_2d.gd:13-14
+var current_vector := Vector2.ZERO
+var current_raw_length := 0.0
+```
+
+### current_vector
+
+Stores the processed vector after scaling and length mode transformations. Used for:
+- Drawing the visual representation
+- Comparison to detect changes (smart redraw)
+- Position and color calculations
+
+### current_raw_length
+
+Stores the original vector magnitude before length mode is applied. Used for:
+- Color dimming calculations
+- Preserving true magnitude information when clamped/normalized
+- Change detection with floating-point tolerance
+
+<Info>
+Tracking both processed and raw values ensures effects like dimming work correctly even when using Clamp or Normalize length modes.
+</Info>
+
+## Lifecycle Methods
+
+### _ready()
+
+Initializes the node and sets up the settings connection:
+
+```gdscript vector_display_2d.gd:18-22
+func _ready() -> void:
+    VectorDisplayFunctions.check_targets_and_settings(self, target_node, target_property, settings)
+    
+    # Redraw automatically when settings change
+    settings.changed.connect(queue_redraw)
+```
+
+**Responsibilities:**
+1. Validate target node and property
+2. Auto-assign parent node if needed
+3. Connect settings change signal
+4. Display errors for invalid configuration
+
+<Accordion title="Validation details">
+The validation function (`vector_display_functions.gd:6-21`) checks:
+
+```gdscript
+if target_node == null:
+    push_warning("[VectorDisplay] Target node not defined. Autoassigning to parent node")
+    target_node = self_node.get_parent()
+
+if not target_node:
+    push_error("[VectorDisplay] Target node not found")
+    return
+
+if not target_node.get(target_property) is Vector2:
+    push_error("[VectorDisplay] Target property is not a Vector2 or doesn't exist")
+    return
+
+if not settings:
+    push_error("[VectorDisplay] Settings not defined")
+    return
+```
+</Accordion>
+
+### _process(delta)
+
+Runs every frame to capture and process the target vector:
+
+```gdscript vector_display_2d.gd:26-40
+func _process(_delta) -> void:
+    if not is_instance_valid(target_node): return
+    
+    var new_vector: Vector2 = target_node.get(target_property) * settings.vector_scale
+    var new_raw_length := new_vector.length()
+    
+    new_vector = VectorDisplayFunctions.apply_lenght_mode(new_vector, settings)
+    
+    # Improves performance, rendering only when is necesary
+    if current_vector == new_vector and is_equal_approx(current_raw_length, new_raw_length): return
+    
+    current_vector = new_vector
+    current_raw_length = new_raw_length
+    queue_redraw()
+```
+
+**Process flow:**
+1. **Safety check** - Verify target node still exists
+2. **Read** - Get current property value using reflection
+3. **Scale** - Apply visual scaling factor
+4. **Transform** - Apply length mode (Normal/Clamp/Normalize)
+5. **Compare** - Check if vector actually changed
+6. **Update** - Store new values and queue redraw
+
+<Info>
+The smart comparison prevents unnecessary redraws, significantly improving performance when vectors are static.
+</Info>
+
+### _draw()
+
+Handles all rendering using Godot's 2D drawing API:
+
+```gdscript vector_display_2d.gd:43-62
+func _draw() -> void:
+    if not settings.show_vectors: return
+    
+    var colors := VectorDisplayFunctions.calculate_draw_colors(current_vector, current_raw_length, settings)
+    
+    # Main vector calculations and render, according to mode
+    var current_vector_position := VectorDisplayFunctions.get_main_vector_position(current_vector, settings)
+    draw_line(current_vector_position.begin, current_vector_position.end, colors.main, settings.width, true)
+    _draw_arrowhead(current_vector_position.begin, current_vector_position.end, colors.main)
+    
+    if not settings.show_axes: return
+    
+    # Axes calculations and render, according to mode
+    var current_axes_pos := VectorDisplayFunctions.get_axes_positions(current_vector, settings)
+    
+    # Components render
+    draw_line(current_axes_pos.x_begin, current_axes_pos.x_end, colors.x, settings.width, true)
+    _draw_arrowhead(current_axes_pos.x_begin, current_axes_pos.x_end, colors.x)
+    draw_line(current_axes_pos.y_begin, current_axes_pos.y_end, colors.y, settings.width, true)
+    _draw_arrowhead(current_axes_pos.y_begin, current_axes_pos.y_end, colors.y)
+```
+
+**Rendering steps:**
+1. Check if vectors should be shown
+2. Calculate colors (rainbow, dimming)
+3. Get main vector positions (pivot mode)
+4. Draw main vector line and arrowhead
+5. If enabled, draw X/Y component axes
+
+### _unhandled_key_input(event)
+
+Handles keyboard shortcuts for toggling visibility:
+
+```gdscript vector_display_2d.gd:91-93
+func _unhandled_key_input(event: InputEvent) -> void:
+    if VectorDisplayFunctions.check_shortcut(event, settings):
+        get_viewport().set_input_as_handled()
+```
+
+This prevents input propagation when the shortcut is triggered.
+
+## Using in Your Scenes
+
+### Basic Setup
+
+1. Add `VectorDisplay2D` as a child of the node with vectors
+2. Create or assign a `VectorDisplaySettings` resource
+3. Set `target_property` to match your vector variable
+
+**Scene tree example:**
+```
+CharacterBody2D
+├─ Sprite2D
+├─ CollisionShape2D
+└─ VectorDisplay2D  # Automatically uses parent's 'velocity'
+```
+
+### Advanced Setup
+
+For visualizing vectors from a different node:
+
+```
+Node2D (Main Scene)
+├─ Player (CharacterBody2D)
+│  ├─ Sprite2D
+│  └─ CollisionShape2D
+└─ VectorVisualizer (Node2D)
+   └─ VectorDisplay2D  # Set target_node to Player, target_property to "velocity"
+```
+
+<Accordion title="Why attach to a separate node?">
+Attaching the visualizer to a separate node is useful when:
+
+- You want the visualization at a different position
+- The target node might be deleted (visualizer persists)
+- You're visualizing vectors from multiple nodes
+- You need different positioning or layering
+</Accordion>
+
+### Runtime Modification
+
+All properties can be modified at runtime:
+
+```gdscript
+# Switch what you're visualizing
+$VectorDisplay2D.target_property = "aim_direction"
+
+# Change target node
+$VectorDisplay2D.target_node = $Enemy
+
+# Modify settings
+$VectorDisplay2D.settings.vector_scale = 2.0
+$VectorDisplay2D.settings.rainbow = true
+```
+
+<Note>
+Changing `target_node` or `target_property` at runtime requires the new configuration to be valid, but there's no automatic re-validation. Make sure the new target and property exist.
+</Note>
+
+## Position and Transform
+
+Since `VectorDisplay2D` extends `Node2D`, it supports all standard 2D transformations:
+
+- **Position** - Moves the vector origin
+- **Rotation** - Rotates the entire visualization
+- **Scale** - Scales the visual size (in addition to `vector_scale`)
+
+<Info>
+The node's position determines where the vector origin appears. For following a moving object, make the VectorDisplay2D a child so it inherits the parent's transform.
+</Info>
+
+## Performance Considerations
+
+### Optimizations Built-In
+
+1. **Smart redraw** - Only redraws when vectors change
+2. **Settings signals** - Automatic updates on configuration changes
+3. **Early returns** - Skips rendering when disabled
+4. **Validity checks** - Prevents errors from deleted nodes
+
+### Best Practices
+
+- Share `VectorDisplaySettings` resources across multiple visualizers
+- Use `show_vectors = false` instead of removing nodes to temporarily hide
+- Avoid changing `target_node` every frame (expensive reflection)
+- Keep `vector_scale` reasonable to avoid extremely large draw calls
+
+<Note>
+The addon is designed to be performant even with many instances running simultaneously thanks to the smart redraw system.
+</Note>

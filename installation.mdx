@@ -1,0 +1,116 @@
+---
+title: Installation
+description: Step-by-step guide to installing Vector Display 2D in your Godot project
+---
+
+## Requirements
+
+- Godot 4.0 or later
+- A Godot project (2D or 2D/3D hybrid)
+
+<Note>
+  Vector Display 2D is currently compatible with Godot 4.x. Make sure your project is using Godot 4.0 or higher.
+</Note>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Download the addon">
+    Download or clone the Vector Display 2D addon from the repository.
+    
+    ```bash
+    git clone <repository-url>
+    ```
+    
+    Or download the ZIP file and extract it to a temporary location.
+  </Step>
+
+  <Step title="Locate the addon folder">
+    Navigate to the downloaded files and find the `addons/vector_display_2d` folder. This folder contains all the necessary files:
+    
+    - `plugin.cfg` - Plugin configuration
+    - `plugin.gd` - Plugin script
+    - `vector_display_2d.gd` - Main node script
+    - `vector_display_settings.gd` - Settings resource
+    - `vector_display_functions.gd` - Helper functions
+    - `icon.svg` - Node icon
+    - `display_shortcut.tres` - Default toggle shortcut (Shift+V)
+  </Step>
+
+  <Step title="Copy to your project">
+    Copy the entire `addons` folder (or just the `vector_display_2d` subfolder if you already have an `addons` folder) into your Godot project's root directory.
+    
+    Your project structure should look like:
+    
+    ```
+    your_project/
+    ├── addons/
+    │   └── vector_display_2d/
+    │       ├── plugin.cfg
+    │       ├── plugin.gd
+    │       ├── vector_display_2d.gd
+    │       ├── vector_display_settings.gd
+    │       ├── vector_display_functions.gd
+    │       ├── icon.svg
+    │       └── display_shortcut.tres
+    ├── scenes/
+    ├── scripts/
+    └── project.godot
+    ```
+  </Step>
+
+  <Step title="Enable the plugin in Godot">
+    1. Open your project in Godot
+    2. Go to **Project > Project Settings**
+    3. Navigate to the **Plugins** tab
+    4. Find **Vector Display 2D** in the list
+    5. Check the **Enable** checkbox
+    
+    <Note>
+      If you don't see the plugin in the list, try closing and reopening your project, or click the "Update" button in the Plugins tab.
+    </Note>
+  </Step>
+
+  <Step title="Verify installation">
+    To verify the plugin is installed correctly:
+    
+    1. In the Scene panel, click the **+** button to add a new node
+    2. Search for "VectorDisplay2D"
+    3. You should see the **VectorDisplay2D** custom node with its icon
+    
+    If you see the node, the installation was successful!
+    
+    <Warning>
+      If the VectorDisplay2D node doesn't appear, make sure the plugin is enabled in Project Settings > Plugins and that all files are in the correct location.
+    </Warning>
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Plugin not showing in Plugins tab">
+    - Make sure the `addons/vector_display_2d` folder is directly under your project root
+    - Check that `plugin.cfg` exists in the `addons/vector_display_2d` folder
+    - Try restarting Godot
+    - Click the "Update" button in the Plugins tab
+  </Accordion>
+  
+  <Accordion title="VectorDisplay2D node not available">
+    - Verify the plugin is **enabled** in Project Settings > Plugins
+    - Make sure all script files (.gd) are present in the addon folder
+    - Check the Godot console for any error messages
+    - Try disabling and re-enabling the plugin
+  </Accordion>
+  
+  <Accordion title="Errors about missing icon.svg">
+    - Ensure `icon.svg` is present in the `addons/vector_display_2d` folder
+    - The plugin will still work without the icon, but you'll see a default node icon
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<Card title="Quick Start" icon="bolt" href="/quickstart">
+  Now that the addon is installed, learn how to display your first vector in under 5 minutes
+</Card>

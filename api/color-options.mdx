@@ -1,0 +1,333 @@
+---
+title: Color Options
+description: Customize vector colors with static colors, rainbow mode, and dynamic dimming
+icon: palette
+---
+
+Color options control the visual appearance of vectors through static colors, angle-based rainbow coloring, and magnitude-based dimming effects.
+
+## Static Colors
+
+<ParamField path="main_color" type="Color" default="Color.YELLOW">
+  Color for the main vector arrow.
+  
+  - **Type**: Godot `Color` object
+  - **Default**: Yellow `Color(1, 1, 0, 1)`
+  - **Applies to**: The primary vector visualization
+  - **Overridden by**: `rainbow` mode (when enabled)
+  
+  **Usage**:
+  ```gdscript
+  # Set using predefined colors
+  settings.main_color = Color.CYAN
+  
+  # Set using RGB values
+  settings.main_color = Color(0.5, 0.8, 1.0)
+  
+  # Set with alpha transparency
+  settings.main_color = Color(1, 0, 0, 0.7)  # Semi-transparent red
+  ```
+</ParamField>
+
+<ParamField path="x_axis_color" type="Color" default="Color.RED">
+  Color for the X component of the vector.
+  
+  - **Type**: Godot `Color` object
+  - **Default**: Red `Color(1, 0, 0, 1)`
+  - **Applies to**: Horizontal (X) component when `show_axes` is enabled
+  - **Not affected by**: `rainbow` mode (axes always use static colors)
+  
+  **Convention**: Red for X-axis follows standard mathematical visualization
+</ParamField>
+
+<ParamField path="y_axis_color" type="Color" default="Color.GREEN">
+  Color for the Y component of the vector.
+  
+  - **Type**: Godot `Color` object
+  - **Default**: Green `Color(0, 1, 0, 1)`
+  - **Applies to**: Vertical (Y) component when `show_axes` is enabled
+  - **Not affected by**: `rainbow` mode (axes always use static colors)
+  
+  **Convention**: Green for Y-axis follows standard mathematical visualization
+</ParamField>
+
+## Rainbow Mode
+
+<ParamField path="rainbow" type="bool" default="false">
+  Enable angle-based color cycling for the main vector.
+  
+  **When enabled**:
+  - Main vector color is determined by its angle
+  - Creates a full spectrum as vectors rotate 360 degrees
+  - Overrides `main_color` setting
+  - Axis components still use their static colors
+  
+  **Color Mapping**:
+  - **0° (right)**: Red
+  - **60°**: Yellow
+  - **120° (up-left)**: Green
+  - **180° (left)**: Cyan
+  - **240°**: Blue
+  - **300° (down-right)**: Magenta
+  - **360°**: Red (full cycle)
+  
+  **Implementation**:
+  ```gdscript
+  var angle: float = vector.angle()  # Get angle in radians
+  if angle < 0: angle += TAU         # Normalize to [0, TAU]
+  colors.main = Color.from_hsv(angle / TAU, 1.0, 1.0)
+  ```
+  
+  **Use Cases**:
+  - Visualize rotation or angular velocity
+  - Make direction immediately apparent through color
+  - Create engaging educational visualizations
+  - Debug rotational behavior
+  
+  <Info>
+    Rainbow mode uses full saturation (1.0) and full value (1.0) for vivid colors. Dimming can still be applied on top of rainbow colors.
+  </Info>
+</ParamField>
+
+## Color Dimming
+
+Dimming gradually transitions vector colors toward a fallback color as vectors become shorter, providing visual feedback about magnitude.
+
+<ParamField path="dimming" type="bool" default="false">
+  Enable magnitude-based color dimming.
+  
+  **When enabled**:
+  - Short vectors blend toward `fallback_color`
+  - Long vectors maintain their full color
+  - Applies to both main vector and axes
+  - Works with both static colors and rainbow mode
+  
+  **When disabled**:
+  - Vectors always display at full color intensity
+  - No magnitude indication through color
+  
+  **Visual Effect**:
+  - Provides immediate visual feedback of vector strength
+  - Helps distinguish between active and near-zero vectors
+  - Creates smooth color transitions as magnitude changes
+</ParamField>
+
+<ParamField path="dimming_speed" type="float" default="1.0">
+  Controls how quickly colors dim as vectors get shorter.
+  
+  - **Range**: 0.01 to 10+
+  - **Increment**: 0.01
+  - **Default**: 1.0 (standard dimming rate)
+  
+  **Behavior**:
+  - **Higher values** (2.0+): Faster dimming, colors fade at longer lengths
+  - **Lower values** (0.1-0.5): Slower dimming, colors stay vibrant until very short
+  - **Value of 1.0**: Balanced dimming for typical use cases
+  
+  **Formula**:
+  ```gdscript
+  dimming_value = clamp(dimming_speed * 10 / vector.length(), 0.0, 1.0)
+  final_color = base_color.lerp(fallback_color, dimming_value)
+  ```
+  
+  **Note**: Internal correction factor of 10 is applied for better control range
+  
+  **Examples**:
+  - `0.5`: Very gradual dimming, maintains color until almost zero
+  - `1.0`: Default, balanced dimming
+  - `3.0`: Aggressive dimming, transitions to fallback quickly
+</ParamField>
+
+<ParamField path="fallback_color" type="Color" default="Color.BLACK">
+  Target color for dimmed vectors.
+  
+  - **Type**: Godot `Color` object
+  - **Default**: Black `Color(0, 0, 0, 1)`
+  - **Effect**: Vectors smoothly blend to this color as they approach zero length
+  
+  **Common Choices**:
+  - **Black** (default): Vectors fade out, good for dark backgrounds
+  - **White**: Fade to white, good for light backgrounds
+  - **Gray**: Maintain some visibility at zero length
+  - **Matching background**: Complete visual fade-out
+  
+  **Usage**:
+  ```gdscript
+  # Fade to gray instead of black
+  settings.fallback_color = Color(0.3, 0.3, 0.3)
+  
+  # Fade to white for light themes
+  settings.fallback_color = Color.WHITE
+  
+  # Fade to transparent (requires alpha blending)
+  settings.fallback_color = Color(0, 0, 0, 0)
+  ```
+</ParamField>
+
+<ParamField path="normalized_dimming_type" type="enum" default="None">
+  Controls dimming behavior when using Normalize length mode.
+  
+  <Tabs>
+    <Tab title="None">
+      No dimming when length mode is "Normalize".
+      
+      **Behavior**:
+      - All normalized vectors display at full color
+      - Dimming is completely disabled
+      - Simplest option for direction-only visualization
+      
+      **When to use**: You only want to show direction and dimming would be misleading
+    </Tab>
+    
+    <Tab title="Absolute">
+      Dimming based on the original vector magnitude (before scaling or normalization).
+      
+      **Behavior**:
+      - Uses `current_raw_length` from the raw vector value
+      - Dimming reflects the true vector magnitude
+      - All vectors display at same length but different colors
+      
+      **When to use**: 
+      - Show direction uniformly but indicate magnitude through color
+      - Normalize removes length variation, but you still want magnitude feedback
+      - Educational visualizations showing both direction and magnitude properties
+      
+      **Example**: A velocity of `(3, 4)` (magnitude 5) will be dimmed less than `(0.3, 0.4)` (magnitude 0.5), even though both point the same direction
+    </Tab>
+    
+    <Tab title="Visual">
+      Dimming based on the displayed (normalized) vector length.
+      
+      **Behavior**:
+      - Uses the length after normalization
+      - In Normalize mode, this means all vectors have the same dimming
+      - More useful with Clamp mode
+      
+      **When to use**:
+      - Dim based on what the user sees, not original values
+      - Combine with Clamp mode to show both clamping and dimming
+      - Less common with Normalize mode (all vectors would dim equally)
+    </Tab>
+  </Tabs>
+  
+  <Note>
+    This setting only affects dimming behavior when `length_mode` is "Normalize". With "Normal" or "Clamp" modes, dimming always uses the visual length.
+  </Note>
+</ParamField>
+
+## Color Interaction
+
+Understanding how rainbow mode and dimming work together:
+
+<Accordion title="Rainbow OFF + Dimming OFF">
+  **Result**: Static colors at full intensity
+  
+  - Main vector: `main_color`
+  - X-axis: `x_axis_color`
+  - Y-axis: `y_axis_color`
+  - No variation based on angle or magnitude
+</Accordion>
+
+<Accordion title="Rainbow ON + Dimming OFF">
+  **Result**: Angle-based colors at full intensity
+  
+  - Main vector: Color changes with angle (full spectrum)
+  - X-axis: Still uses `x_axis_color` (static)
+  - Y-axis: Still uses `y_axis_color` (static)
+  - Direction is immediately visible, no magnitude indication
+</Accordion>
+
+<Accordion title="Rainbow OFF + Dimming ON">
+  **Result**: Static colors that fade with magnitude
+  
+  - Main vector: `main_color` → `fallback_color` blend
+  - X-axis: `x_axis_color` → `fallback_color` blend
+  - Y-axis: `y_axis_color` → `fallback_color` blend
+  - Magnitude is indicated through color intensity
+</Accordion>
+
+<Accordion title="Rainbow ON + Dimming ON">
+  **Result**: Angle-based colors that fade with magnitude
+  
+  - Main vector: Rainbow color → `fallback_color` blend
+  - X-axis: `x_axis_color` → `fallback_color` blend
+  - Y-axis: `y_axis_color` → `fallback_color` blend
+  - Both direction (hue) and magnitude (brightness) are visible
+  - Most visually rich option
+</Accordion>
+
+## Common Configurations
+
+<Accordion title="Physics Velocity (Standard)">
+  ```gdscript
+  settings.main_color = Color.YELLOW
+  settings.x_axis_color = Color.RED
+  settings.y_axis_color = Color.GREEN
+  settings.rainbow = false
+  settings.dimming = false
+  ```
+  Clear, professional visualization with standard colors.
+</Accordion>
+
+<Accordion title="Angular Velocity Visualization">
+  ```gdscript
+  settings.rainbow = true           # Color shows direction
+  settings.dimming = true           # Brightness shows magnitude
+  settings.dimming_speed = 1.5
+  settings.fallback_color = Color.BLACK
+  ```
+  Perfect for rotating objects or directional forces.
+</Accordion>
+
+<Accordion title="Educational (High Contrast)">
+  ```gdscript
+  settings.main_color = Color.CYAN
+  settings.x_axis_color = Color(1, 0, 0)     # Bright red
+  settings.y_axis_color = Color(0, 1, 0)     # Bright green
+  settings.rainbow = false
+  settings.dimming = true
+  settings.dimming_speed = 2.0
+  settings.fallback_color = Color(0.2, 0.2, 0.2)  # Dark gray
+  ```
+  High contrast for presentations and learning materials.
+</Accordion>
+
+<Accordion title="Normalized with Magnitude Feedback">
+  ```gdscript
+  # In rendering options:
+  settings.length_mode = "Normalize"
+  settings.max_length = 100.0
+  
+  # Color options:
+  settings.rainbow = true                      # Direction via color
+  settings.dimming = true                      # Magnitude via intensity
+  settings.normalized_dimming_type = "Absolute"  # Use original magnitude
+  settings.dimming_speed = 1.0
+  settings.fallback_color = Color.BLACK
+  ```
+  All vectors same length, but color shows direction and brightness shows original magnitude.
+</Accordion>
+
+## Color Calculation Order
+
+Colors are processed in this sequence:
+
+1. **Start** with base colors (`main_color`, `x_axis_color`, `y_axis_color`)
+2. **Apply rainbow** (if enabled): Replace main_color with angle-based hue
+3. **Apply dimming** (if enabled):
+   - Calculate dimming value based on vector length and `dimming_speed`
+   - Lerp from current color to `fallback_color`
+4. **Render** with final calculated colors
+
+## Source Reference
+
+- Color settings definition: `vector_display_settings.gd:44-74`
+- Color calculation logic: `vector_display_functions.gd:34-69`
+- Rainbow angle calculation: `vector_display_functions.gd:47-51`
+- Dimming blend calculation: `vector_display_functions.gd:54-67`
+
+## Related Settings
+
+- [Rendering Options](/api/rendering-options) - Control vector scale, width, and length
+- [Pivot Modes](/api/pivot-modes) - Change vector origin points
+- [VectorDisplaySettings](/api/vector-display-settings) - All available settings including show_vectors and show_axes

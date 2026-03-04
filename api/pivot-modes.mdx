@@ -1,0 +1,388 @@
+---
+title: Pivot Modes
+description: Control where vectors originate from with Normal and Centered pivot modes
+icon: anchor
+---
+
+Pivot modes determine the origin point of vectors, controlling whether they start from zero or scale symmetrically from their center.
+
+## Understanding Pivot Points
+
+The pivot point determines how a vector is positioned when drawn:
+
+- **Normal mode**: Vector starts at the origin (0, 0) and extends to its endpoint
+- **Centered mode**: Vector is centered at the origin, extending equally in both directions
+
+<Note>
+  Pivot modes only affect visual display. The actual vector values in your target node are never modified.
+</Note>
+
+## Main Vector Pivot
+
+<ParamField path="pivot_mode" type="enum" default="Normal">
+  Controls the pivot point for the main vector.
+  
+  <Tabs>
+    <Tab title="Normal">
+      Vector starts from the origin and points to its value.
+      
+      **Positioning**:
+      ```gdscript
+      begin = Vector2.ZERO
+      end = vector
+      ```
+      
+      **Visual Behavior**:
+      - Vector "grows" from the origin
+      - Origin is at the tail of the arrow
+      - Natural representation for position-based vectors
+      
+      **Example**: For vector `(100, 50)`
+      - Tail at: `(0, 0)`
+      - Head at: `(100, 50)`
+      - Arrow points from origin to the vector value
+      
+      **When to use**:
+      - **Velocity vectors** on moving objects (shows direction from current position)
+      - **Force vectors** (shows force direction from application point)
+      - **Position offsets** (shows displacement from origin)
+      - **Standard physics visualization**
+      
+      **Visualization**:
+      ```
+         ┌─────────────►
+         │     (100, 50)
+         │
+      (0,0)
+      ```
+    </Tab>
+    
+    <Tab title="Centered">
+      Vector is centered at the origin, extending symmetrically.
+      
+      **Positioning**:
+      ```gdscript
+      begin = -vector / 2
+      end = vector / 2
+      ```
+      
+      **Visual Behavior**:
+      - Vector scales symmetrically from center
+      - Origin is at the midpoint of the vector
+      - Shows vector as a centered line segment
+      
+      **Example**: For vector `(100, 50)`
+      - Tail at: `(-50, -25)`
+      - Head at: `(50, 25)`
+      - Arrow is centered on the origin
+      
+      **When to use**:
+      - **Comparing vector magnitudes** (easier to see relative sizes)
+      - **Angular velocity** (shows rotation axis clearly)
+      - **Centered visualizations** (when origin should be in middle)
+      - **Educational demonstrations** (symmetric display is often clearer)
+      
+      **Visualization**:
+      ```
+      ◄─────┼─────►
+    (-50,-25) (0,0) (50,25)
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+## Axes Pivot Mode
+
+<ParamField path="axes_pivot_mode" type="enum" default="Same">
+  Controls the pivot point for X and Y axis components independently from the main vector.
+  
+  <Warning>
+    Highly recommended to keep this at "Same" for intuitive visualization. Independent axis pivots can create confusing displays.
+  </Warning>
+  
+  <Tabs>
+    <Tab title="Same">
+      Axes use the same pivot mode as the main vector.
+      
+      **Behavior**:
+      - If `pivot_mode = "Normal"`, axes use Normal pivot
+      - If `pivot_mode = "Centered"`, axes use Centered pivot
+      - Maintains consistency across all vector components
+      
+      **Recommended**: This is the default and most intuitive option
+      
+      **Example with Normal pivot**: For vector `(60, 40)`
+      - X-axis: `(0, 0)` to `(60, 0)`
+      - Y-axis: `(0, 0)` to `(0, 40)`
+      
+      **Example with Centered pivot**: For vector `(60, 40)`
+      - X-axis: `(-30, 0)` to `(30, 0)`
+      - Y-axis: `(0, -20)` to `(0, 20)`
+    </Tab>
+    
+    <Tab title="Normal">
+      Axes always use Normal pivot, regardless of main vector pivot.
+      
+      **Behavior**:
+      - Axes start from origin
+      - Even if main vector is centered
+      
+      **Special case**: When `pivot_mode = "Centered"`
+      - Main vector is centered
+      - Axes start from origin but are offset by `-vector / 2`
+      - This creates a hybrid visualization
+      
+      **Implementation**:
+      ```gdscript
+      if pivot_mode == "Centered" and axes_pivot_mode == "Normal":
+          axes.x_begin = -vector / 2
+          axes.x_end = Vector2(vector.x, 0) - vector / 2
+          axes.y_begin = -vector / 2
+          axes.y_end = Vector2(0, vector.y) - vector / 2
+      ```
+      
+      **When to use**: Rarely needed; creates asymmetric visualization
+    </Tab>
+    
+    <Tab title="Centered">
+      Axes always use Centered pivot, regardless of main vector pivot.
+      
+      **Behavior**:
+      - Each axis component is centered on the origin
+      - Even if main vector uses Normal pivot
+      
+      **Example**: For vector `(60, 40)` with `pivot_mode = "Normal"`
+      - Main vector: `(0, 0)` to `(60, 40)` (Normal)
+      - X-axis: `(-30, 0)` to `(30, 0)` (Centered)
+      - Y-axis: `(0, -20)` to `(0, 20)` (Centered)
+      
+      **When to use**: Specialized cases where you want asymmetric component display
+    </Tab>
+  </Tabs>
+</ParamField>
+
+## Visual Comparison
+
+### Main Vector Pivot Modes
+
+For a vector value of `(80, 60)`:
+
+<CodeGroup>
+```text Normal Pivot
+  Y
+  ↑
+  │    ╱ (80, 60)
+  │   ╱
+  │  ╱
+  │ ╱
+  │╱
+  └────────→ X
+(0,0)
+
+Vector starts at origin,
+extends to (80, 60)
+```
+
+```text Centered Pivot
+  Y
+  ↑
+  │   ╱│╲
+  │  ╱ │ ╲  (40, 30)
+  │ ╱  │  ╲
+  │╱   │   ╲
+──┼────┼────┼── X
+  │╲   │   ╱
+(-40,-30)  ╱
+  │    │ ╱
+  │    │╱
+
+Vector centered at origin,
+extends ±half in each direction
+```
+</CodeGroup>
+
+### Axes Pivot Combinations
+
+For vector `(80, 60)` with `show_axes = true`:
+
+<Accordion title="pivot_mode: Normal, axes_pivot_mode: Same">
+  **All components start from origin**
+  
+  ```text
+    Y
+    ↑
+  60│     ● (80, 60)
+    │    ╱│
+    │   ╱ │
+    │  ╱  │ Y-axis
+    │ ╱   │
+    │╱────┼────
+    └─────┴────→ X
+  (0,0)  80
+         X-axis
+  ```
+  
+  - Main vector: `(0,0)` → `(80, 60)`
+  - X-axis: `(0,0)` → `(80, 0)`
+  - Y-axis: `(0,0)` → `(0, 60)`
+  
+  **Most common configuration for physics**
+</Accordion>
+
+<Accordion title="pivot_mode: Centered, axes_pivot_mode: Same">
+  **All components centered at origin**
+  
+  ```text
+    Y
+    ↑
+  30│    ╱│╲
+    │   ╱ │ ╲
+  ──┼──┼──┼──┼─→ X
+ -40 │  │  40
+    │  │
+ -30│  │
+  
+  Y-axis centered
+  ```
+  
+  - Main vector: `(-40,-30)` → `(40, 30)`
+  - X-axis: `(-40, 0)` → `(40, 0)`
+  - Y-axis: `(0, -30)` → `(0, 30)`
+  
+  **Useful for symmetric visualizations**
+</Accordion>
+
+<Accordion title="pivot_mode: Centered, axes_pivot_mode: Normal">
+  **Hybrid: Main centered, axes offset from origin**
+  
+  ```text
+    Y
+    ↑
+    │   ╱│╲
+    │  ╱ │ ╲ (40, 30)
+  ──┼─┼──┼──┼──→ X
+ -40 │  │
+    │  │
+    └──┼────
+   (-40,-30) └── Axes start here
+  ```
+  
+  - Main vector: `(-40,-30)` → `(40, 30)` (centered)
+  - X-axis: `(-40,-30)` → `(40, -30)` (offset)
+  - Y-axis: `(-40,-30)` → `(-40, 30)` (offset)
+  
+  **Advanced use case, can be confusing**
+</Accordion>
+
+## Use Case Guide
+
+<CardGroup cols={2}>
+  <Card title="Velocity on Character" icon="person-running">
+    **Recommended**: `pivot_mode = "Normal"`, `axes_pivot_mode = "Same"`
+    
+    Shows velocity pointing away from character's position, making direction immediately clear.
+  </Card>
+  
+  <Card title="Force Comparison" icon="scale-balanced">
+    **Recommended**: `pivot_mode = "Centered"`, `axes_pivot_mode = "Same"`
+    
+    Symmetric display makes it easier to compare magnitudes of different forces.
+  </Card>
+  
+  <Card title="Angular Velocity" icon="arrows-rotate">
+    **Recommended**: `pivot_mode = "Centered"`, `axes_pivot_mode = "Same"`
+    
+    Centered display clearly shows the rotation axis through the origin.
+  </Card>
+  
+  <Card title="Projectile Trajectory" icon="baseball">
+    **Recommended**: `pivot_mode = "Normal"`, `axes_pivot_mode = "Same"`
+    
+    Shows velocity vector pointing from current position along flight path.
+  </Card>
+</CardGroup>
+
+## Code Examples
+
+### Standard Physics Visualization
+
+```gdscript
+# Velocity vector on a moving character
+var settings = VectorDisplaySettings.new()
+settings.pivot_mode = "Normal"        # Start from character position
+settings.axes_pivot_mode = "Same"     # Axes also from position
+settings.show_axes = true             # Show X/Y components
+```
+
+### Centered Force Display
+
+```gdscript
+# Comparing multiple force vectors
+var settings = VectorDisplaySettings.new()
+settings.pivot_mode = "Centered"      # Symmetric around origin
+settings.axes_pivot_mode = "Same"     # Keep axes symmetric too
+settings.vector_scale = 2.0           # Scale up for visibility
+```
+
+### Hybrid Visualization
+
+```gdscript
+# Advanced: Main vector centered, components from corner
+var settings = VectorDisplaySettings.new()
+settings.pivot_mode = "Centered"      # Main vector centered
+settings.axes_pivot_mode = "Normal"   # But components from corner
+settings.show_axes = true
+# Note: This can be visually confusing, use sparingly
+```
+
+## Implementation Details
+
+### Position Calculation
+
+The addon calculates positions using these functions:
+
+**Main vector** (`vector_display_functions.gd:72-87`):
+```gdscript
+static func get_main_vector_position(vector, settings):
+    match settings.pivot_mode:
+        "Normal":
+            return {"begin": Vector2.ZERO, "end": vector}
+        "Centered":
+            return {"begin": -vector / 2, "end": vector / 2}
+```
+
+**Axes** (`vector_display_functions.gd:90-146`):
+- Handles three modes: "Same", "Normal", "Centered"
+- Special case logic for `Normal` axes with `Centered` main vector
+- Calculates separate begin/end for X and Y components
+
+## Common Pitfalls
+
+<Warning>
+  **Avoid**: Setting `axes_pivot_mode` to anything other than "Same" unless you have a specific reason.
+  
+  **Why**: Independent axis pivots create visualizations that don't match how vectors are typically understood mathematically.
+</Warning>
+
+<Warning>
+  **Watch out**: When switching between Normal and Centered modes, vectors appear to "jump" positions.
+  
+  **Why**: The origin point changes instantly. This is purely visual - your vector values haven't changed.
+</Warning>
+
+<Tip>
+  **Pro tip**: Use Centered mode when creating screenshots or demonstrations for documentation. The symmetric layout is often clearer in static images.
+</Tip>
+
+## Related Settings
+
+- [Rendering Options](/api/rendering-options) - Control vector scale and appearance
+- [Color Options](/api/color-options) - Customize vector colors
+- [VectorDisplaySettings](/api/vector-display-settings) - All available settings including show_vectors and show_axes
+
+## Source Reference
+
+- Pivot settings definition: `vector_display_settings.gd:37-41`
+- Main vector positioning: `vector_display_functions.gd:72-87`
+- Axes positioning logic: `vector_display_functions.gd:90-146`
+- Drawing implementation: `vector_display_2d.gd:42-63`

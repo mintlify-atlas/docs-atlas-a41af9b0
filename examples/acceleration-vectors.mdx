@@ -1,0 +1,346 @@
+---
+title: "Acceleration Vectors"
+description: "Display multiple vectors to visualize velocity and acceleration together"
+---
+
+## Overview
+
+Displaying multiple vectors simultaneously helps you understand complex motion systems. This example shows how to visualize both velocity and acceleration on the same object, using different colors to distinguish between them.
+
+## Why Visualize Acceleration?
+
+While velocity shows *where* an object is moving, acceleration shows *how* the movement is changing:
+
+- **Velocity vector** - Current speed and direction
+- **Acceleration vector** - Rate of change in velocity
+- **Together** - Complete picture of motion dynamics
+
+This is invaluable for debugging physics-based games, vehicle controls, and complex movement systems.
+
+## Complete Example
+
+Here's a CharacterBody2D with both velocity and acceleration tracking:
+
+<CodeGroup>
+
+```gdscript player_with_acceleration.gd
+extends CharacterBody2D
+
+const SPEED = 400.0
+const ACCELERATION = 1200.0
+const FRICTION = 800.0
+const JUMP_VELOCITY = -500.0
+
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+
+# Track acceleration for visualization
+var acceleration := Vector2.ZERO
+var previous_velocity := Vector2.ZERO
+
+func _physics_process(delta):
+	# Reset acceleration
+	acceleration = Vector2.ZERO
+	
+	# Apply gravity
+	if not is_on_floor():
+		acceleration.y += gravity
+		velocity.y += gravity * delta
+	
+	# Handle jump
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+		acceleration.y = JUMP_VELOCITY / delta  # Instant acceleration
+	
+	# Get input direction
+	var direction = Input.get_axis("ui_left", "ui_right")
+	
+	if direction:
+		# Accelerate in input direction
+		acceleration.x = direction * ACCELERATION
+		velocity.x += acceleration.x * delta
+		velocity.x = clamp(velocity.x, -SPEED, SPEED)
+	else:
+		# Apply friction
+		var friction_force = -velocity.x * FRICTION * delta
+		acceleration.x = friction_force / delta
+		velocity.x += friction_force
+	
+	# Calculate actual acceleration from velocity change
+	if delta > 0:
+		acceleration = (velocity - previous_velocity) / delta
+	previous_velocity = velocity
+	
+	move_and_slide()
+```
+
+```gdscript vehicle.gd (Alternative)
+extends CharacterBody2D
+
+const MAX_SPEED = 600.0
+const ENGINE_POWER = 2000.0
+const DRAG = 0.98
+
+var acceleration := Vector2.ZERO
+
+func _physics_process(delta):
+	# Reset acceleration
+	acceleration = Vector2.ZERO
+	
+	# Engine input
+	var input_vector = Vector2(
+		Input.get_axis("ui_left", "ui_right"),
+		Input.get_axis("ui_up", "ui_down")
+	)
+	
+	if input_vector.length() > 0:
+		# Apply engine force
+		acceleration = input_vector.normalized() * ENGINE_POWER
+		velocity += acceleration * delta
+	
+	# Apply drag
+	velocity *= DRAG
+	
+	# Clamp to max speed
+	if velocity.length() > MAX_SPEED:
+		velocity = velocity.normalized() * MAX_SPEED
+	
+	move_and_slide()
+```
+
+</CodeGroup>
+
+## Scene Tree Structure
+
+Set up two VectorDisplay2D nodes to show both vectors:
+
+```
+CharacterBody2D (player_with_acceleration.gd attached)
+├── CollisionShape2D
+├── Sprite2D
+├── VelocityDisplay (VectorDisplay2D)  ← Yellow vector
+└── AccelerationDisplay (VectorDisplay2D)  ← Cyan vector
+```
+
+## Configuring the Velocity Display
+
+Select the **VelocityDisplay** node:
+
+| Property | Value |
+|----------|-------|
+| **Target Node** | `..` (parent CharacterBody2D) |
+| **Target Property** | `velocity` |
+
+**Settings Resource:**
+
+```gdscript Velocity Settings
+# Show
+show_vectors = true
+show_axes = false
+
+# Rendering
+vector_scale = 0.4
+width = 3.0
+length_mode = "Normal"
+arrowhead = true
+arrowhead_size = 3.0
+pivot_mode = "Normal"
+
+# Colors
+main_color = Color.YELLOW  # Classic velocity color
+```
+
+## Configuring the Acceleration Display
+
+Select the **AccelerationDisplay** node:
+
+| Property | Value |
+|----------|-------|
+| **Target Node** | `..` (parent CharacterBody2D) |
+| **Target Property** | `acceleration` |
+
+**Settings Resource:**
+
+```gdscript Acceleration Settings
+# Show
+show_vectors = true
+show_axes = false
+
+# Rendering
+vector_scale = 0.1  # Much smaller scale (acceleration values are larger)
+width = 2.5
+length_mode = "Clamp"  # Prevent huge spikes
+max_length = 150.0
+arrowhead = true
+arrowhead_size = 2.5
+pivot_mode = "Normal"
+
+# Colors
+main_color = Color.CYAN  # Distinct from velocity
+```
+
+## Comparing Velocity vs Acceleration
+
+<AccordionGroup>
+  <Accordion title="What you'll see when standing still">
+    - **Velocity**: No vector (or very small)
+    - **Acceleration**: Gravity vector pointing downward (if in air), or zero (if on ground)
+  </Accordion>
+  
+  <Accordion title="What you'll see when starting to move">
+    - **Velocity**: Small vector growing in movement direction
+    - **Acceleration**: Large vector in movement direction (input force)
+  </Accordion>
+  
+  <Accordion title="What you'll see at constant speed">
+    - **Velocity**: Steady vector showing current motion
+    - **Acceleration**: Small or zero (no change in velocity)
+  </Accordion>
+  
+  <Accordion title="What you'll see when stopping">
+    - **Velocity**: Vector decreasing toward zero
+    - **Acceleration**: Vector opposite to velocity (friction/braking)
+  </Accordion>
+  
+  <Accordion title="What you'll see when jumping">
+    - **Velocity**: Sudden upward vector, then curves downward
+    - **Acceleration**: Huge spike upward (jump impulse), then steady downward (gravity)
+  </Accordion>
+</AccordionGroup>
+
+## Advanced: Three Vectors
+
+Show velocity, acceleration, AND the X/Y components:
+
+```
+CharacterBody2D
+├── CollisionShape2D
+├── Sprite2D
+├── VelocityDisplay (VectorDisplay2D)
+│   Settings:
+│   ├── show_vectors: true
+│   ├── show_axes: true  ← Enable axes
+│   ├── main_color: Yellow
+│   ├── x_axis_color: Red
+│   └── y_axis_color: Green
+└── AccelerationDisplay (VectorDisplay2D)
+    Settings:
+    ├── show_vectors: true
+    ├── show_axes: false
+    ├── main_color: Cyan
+    └── vector_scale: 0.1
+```
+
+This shows:
+- Yellow arrow = Total velocity
+- Red arrow = Horizontal velocity component
+- Green arrow = Vertical velocity component  
+- Cyan arrow = Acceleration
+
+## Centered Pivot Mode
+
+For a cleaner look, center the acceleration vector:
+
+```gdscript Centered Acceleration
+# Acceleration Display Settings
+vector_scale = 0.1
+width = 2.5
+pivot_mode = "Centered"  # Centers the vector on the sprite
+main_color = Color.CYAN
+```
+
+This makes acceleration appear to "push" from the center of the character, while velocity starts from the origin.
+
+## Rainbow Mode for Direction
+
+Make the velocity vector change color based on direction:
+
+<CodeGroup>
+
+```gdscript Velocity - Rainbow
+# Velocity Settings
+main_color = Color.YELLOW  # Ignored when rainbow is on
+rainbow = true  # Color changes with direction
+```
+
+```gdscript Acceleration - Solid Color
+# Acceleration Settings  
+main_color = Color.CYAN
+rainbow = false  # Keep solid cyan
+```
+
+</CodeGroup>
+
+Now you can see:
+- **Velocity color** = Movement direction (red = right, blue = down, etc.)
+- **Acceleration color** = Always cyan, easy to distinguish
+
+## Dimming Based on Magnitude
+
+Make vectors fade when they're small:
+
+```gdscript Both Vectors with Dimming
+# Velocity Settings
+main_color = Color.YELLOW
+dimming = true
+dimming_speed = 1.5
+fallback_color = Color(0.3, 0.3, 0.1, 0.5)  # Dark yellow
+normalized_dimming_type = "Absolute"
+
+# Acceleration Settings
+main_color = Color.CYAN
+dimming = true
+dimming_speed = 5.0  # Faster dimming for acceleration
+fallback_color = Color(0.1, 0.3, 0.3, 0.5)  # Dark cyan
+normalized_dimming_type = "Absolute"
+```
+
+Effects:
+- High velocity/acceleration = Bright, vivid colors
+- Low velocity/acceleration = Faded, subtle colors
+- Zero = Nearly invisible
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Vehicle Physics" icon="car">
+    Debug car handling, drift mechanics, and engine power curves
+  </Card>
+  <Card title="Space Games" icon="rocket">
+    Visualize thrust, momentum, and orbital mechanics
+  </Card>
+  <Card title="Physics Puzzles" icon="puzzle-piece">
+    Understand force application and momentum transfer
+  </Card>
+  <Card title="Platformer Tuning" icon="gamepad">
+    Perfect jump arcs, acceleration curves, and air control
+  </Card>
+</CardGroup>
+
+## Tips
+
+<Tip>
+  **Different scales**: Acceleration values are often much larger than velocity. Start with `vector_scale = 0.1` for acceleration and adjust from there.
+</Tip>
+
+<Tip>
+  **Clamp acceleration**: Use `length_mode = "Clamp"` on acceleration to prevent instant changes (like jumps) from creating huge vectors.
+</Tip>
+
+<Tip>
+  **Color coding**: Stick to a consistent color scheme. Yellow/white for velocity, cyan/blue for acceleration is a common physics visualization standard.
+</Tip>
+
+<Warning>
+  Calculate acceleration AFTER all forces are applied. If you calculate it too early in `_physics_process()`, it may show incorrect values.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Velocity Vectors" icon="gauge" href="/examples/velocity-vectors">
+    Go back to basics with simple velocity visualization
+  </Card>
+  <Card title="Custom Styling" icon="palette" href="/examples/custom-styling">
+    Explore advanced visual effects and creative designs
+  </Card>
+</CardGroup>

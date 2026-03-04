@@ -1,0 +1,200 @@
+---
+title: Rendering Options
+description: Configure how vectors are displayed visually
+icon: paint-brush
+---
+
+Rendering options control the visual appearance of vectors, including their scale, line width, length behavior, and arrowheads.
+
+## Scale and Size
+
+<ParamField path="vector_scale" type="float" default="1.0">
+  Changes the displayed size of vectors without modifying their actual values.
+  
+  - **Range**: 0.05 to 100+ (exponential scale)
+  - **Increment**: 0.05
+  - **Purpose**: Scale vectors for better visibility without affecting physics or calculations
+  - **Note**: Applied before length_mode processing
+  
+  **Example Use Cases**:
+  - Set to `2.0` to double the visual size of all vectors
+  - Set to `0.5` to show vectors at half their actual size
+  - Useful for visualizing small forces or velocities
+</ParamField>
+
+<ParamField path="width" type="float" default="2.0">
+  Line width in pixels for all vector lines.
+  
+  - **Range**: 0.1 to 10+ (exponential scale)
+  - **Increment**: 0.1
+  - **Units**: Pixels
+  - **Affects**: Main vector and axis component lines
+  
+  **Visual Impact**:
+  - Thicker lines (`5.0`+) are easier to see but may overlap
+  - Thinner lines (`1.0` or less) provide cleaner visualization for dense vector fields
+</ParamField>
+
+## Length Behavior
+
+<ParamField path="length_mode" type="enum" default="Normal">
+  Controls how vector lengths are displayed. Does not change actual vector values.
+  
+  <Tabs>
+    <Tab title="Normal">
+      Displays vectors at their true length (scaled by `vector_scale`).
+      
+      **When to use**: Standard visualization where relative magnitudes matter
+    </Tab>
+    
+    <Tab title="Clamp">
+      Limits vector length to `max_length` while preserving direction.
+      
+      **Implementation**: Uses `vector.limit_length(max_length)`
+      
+      **When to use**:
+      - Prevent extremely long vectors from extending off-screen
+      - Cap maximum visual length while showing variation below the cap
+      - Useful for forces with occasional large spikes
+      
+      **Example**: With `max_length = 100`, a vector of length 150 displays at length 100, but a vector of length 50 displays normally.
+    </Tab>
+    
+    <Tab title="Normalize">
+      All vectors display at exactly `max_length`, showing only direction.
+      
+      **Implementation**: Uses `vector.normalized() * max_length`
+      
+      **When to use**:
+      - Show direction only, not magnitude
+      - Create uniform-length vector fields
+      - Compare directions when magnitudes vary wildly
+      
+      **Example**: With `max_length = 50`, all vectors (regardless of actual length) display at length 50.
+      
+      <Note>
+        When using Normalize mode, consider the `normalized_dimming_type` setting to control whether dimming still reflects the original vector magnitude.
+      </Note>
+    </Tab>
+  </Tabs>
+</ParamField>
+
+<ParamField path="max_length" type="float" default="100.0">
+  Maximum length used by Clamp and Normalize modes.
+  
+  - **Range**: 0.1 to 1000+ (exponential scale)
+  - **Increment**: 0.1
+  - **Only affects**: Vectors when `length_mode` is "Clamp" or "Normalize"
+  - **Has no effect**: When `length_mode` is "Normal"
+  
+  **Relationship with vector_scale**:
+  - `max_length` is applied to the already-scaled vector
+  - Effective length = `min(vector.length() * vector_scale, max_length)` for Clamp mode
+  - Effective length = `max_length` for all vectors in Normalize mode
+</ParamField>
+
+## Arrowheads
+
+<ParamField path="arrowhead" type="bool" default="true">
+  Enable or disable arrowheads on vectors.
+  
+  **When enabled**:
+  - Draws triangular arrowheads pointing in the vector direction
+  - Applies to main vector and axis components (if shown)
+  - Automatically hides when vector is too small to display arrowhead clearly
+  
+  **When disabled**:
+  - Shows simple lines without directional indicators
+  - Useful for cleaner visualization or when direction is obvious
+</ParamField>
+
+<ParamField path="arrowhead_size" type="float" default="3.0">
+  Size of the arrowhead relative to line width.
+  
+  - **Range**: 0.1 to 10+ (exponential scale)
+  - **Increment**: 0.1
+  - **Units**: Multiples of `2 × width`
+  
+  **Size Calculation**:
+  - Actual size in pixels = `width × arrowhead_size × 2`
+  - Default: `2 × 3.0 × 2 = 12` pixels with default width
+  
+  **Visual Guidelines**:
+  - `1.0` - Very small, subtle arrowheads
+  - `3.0` - Default, clearly visible
+  - `5.0`+ - Large, prominent arrowheads
+  
+  **Auto-hiding behavior**:
+  - Arrowheads automatically hide when the vector is shorter than the arrowhead would extend
+  - This prevents visual artifacts with very small vectors
+</ParamField>
+
+## Rendering Pipeline
+
+Vectors are processed in this order:
+
+1. **Read** the raw vector value from the target property
+2. **Scale** by `vector_scale`
+3. **Apply length mode** (Normal/Clamp/Normalize with `max_length`)
+4. **Calculate colors** based on color options
+5. **Position** based on pivot mode
+6. **Draw** with specified `width` and `arrowhead` settings
+
+<Info>
+  All rendering options are visual only and never modify the actual vector values in your target node.
+</Info>
+
+## Common Configurations
+
+<Accordion title="Velocity Visualization">
+  ```gdscript
+  settings.vector_scale = 0.5      # Scale down for high-speed objects
+  settings.width = 2.0             # Standard width
+  settings.length_mode = "Normal"  # Show true velocity magnitudes
+  settings.arrowhead = true        # Show direction clearly
+  settings.arrowhead_size = 3.0    # Standard size
+  ```
+</Accordion>
+
+<Accordion title="Force Direction Only">
+  ```gdscript
+  settings.vector_scale = 1.0
+  settings.width = 2.5
+  settings.length_mode = "Normalize"  # All forces same length
+  settings.max_length = 75.0          # Consistent display length
+  settings.arrowhead = true
+  settings.arrowhead_size = 4.0       # Emphasize direction
+  ```
+</Accordion>
+
+<Accordion title="Large Value Clamping">
+  ```gdscript
+  settings.vector_scale = 1.0
+  settings.width = 2.0
+  settings.length_mode = "Clamp"   # Limit maximum display length
+  settings.max_length = 200.0      # Cap at 200 units
+  settings.arrowhead = true
+  settings.arrowhead_size = 3.0
+  ```
+</Accordion>
+
+<Accordion title="Minimal Clean Display">
+  ```gdscript
+  settings.vector_scale = 1.0
+  settings.width = 1.0             # Thin lines
+  settings.length_mode = "Normal"
+  settings.arrowhead = false       # No arrowheads for cleaner look
+  ```
+</Accordion>
+
+## Related Settings
+
+- [Color Options](/api/color-options) - Control vector colors, rainbow mode, and dimming
+- [Pivot Modes](/api/pivot-modes) - Change where vectors originate from
+- [VectorDisplaySettings](/api/vector-display-settings) - All available settings including show_vectors and show_axes
+
+## Source Reference
+
+- Settings definition: `vector_display_settings.gd:17-36`
+- Length mode application: `vector_display_functions.gd:24-31`
+- Arrowhead drawing: `vector_display_2d.gd:65-88`

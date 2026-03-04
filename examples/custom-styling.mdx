@@ -1,0 +1,593 @@
+---
+title: "Custom Styling"
+description: "Advanced visual effects and creative vector styling techniques"
+---
+
+## Overview
+
+VectorDisplay2D offers extensive styling options beyond basic colors. This guide explores creative visual effects, advanced configurations, and artistic approaches to vector visualization.
+
+## Rainbow Mode
+
+Rainbow mode changes the vector color based on its angle, creating a spectrum effect that makes direction instantly recognizable.
+
+### Basic Rainbow
+
+```gdscript Simple Rainbow
+# Settings
+show_vectors = true
+show_axes = false
+
+# Rendering
+vector_scale = 1.0
+width = 4.0
+arrowhead = true
+
+# Colors
+main_color = Color.WHITE  # Ignored when rainbow is enabled
+rainbow = true  # Enable directional color
+```
+
+**Color mapping:**
+- 0° (right) = Red
+- 60° (up-right) = Yellow
+- 120° (up-left) = Green
+- 180° (left) = Cyan
+- 240° (down-left) = Blue
+- 300° (down-right) = Magenta
+
+### Rainbow with Axes
+
+Show directional color on the main vector while keeping axes in standard colors:
+
+```gdscript Rainbow Main, Colored Axes
+# Settings
+show_vectors = true
+show_axes = true
+
+# Rendering
+vector_scale = 0.8
+width = 3.5
+arrowhead = true
+
+# Colors
+rainbow = true  # Main vector uses rainbow
+x_axis_color = Color.RED    # X axis stays red
+y_axis_color = Color.GREEN  # Y axis stays green
+```
+
+This creates a beautiful effect where:
+- Main diagonal vector = Rainbow colored by direction
+- X component = Always red
+- Y component = Always green
+
+### Rainbow + Dimming Combo
+
+Combine rainbow with dimming for direction AND magnitude visualization:
+
+```gdscript Rainbow with Magnitude Dimming
+# Colors
+rainbow = true
+
+# Color Dimming
+dimming = true
+dimming_speed = 2.0
+fallback_color = Color(0.15, 0.15, 0.15, 0.3)  # Very dark gray
+normalized_dimming_type = "Absolute"
+```
+
+**Result:**
+- **High speed** = Bright, saturated rainbow colors
+- **Medium speed** = Muted rainbow tones
+- **Low speed** = Faded, desaturated colors
+- **Stopped** = Nearly invisible gray
+
+## Dimming Effects
+
+Dimming creates dynamic visual feedback based on vector magnitude.
+
+### Gentle Fade
+
+Subtle dimming for smooth transitions:
+
+```gdscript Subtle Dimming
+# Colors
+main_color = Color.YELLOW
+
+# Color Dimming
+dimming = true
+dimming_speed = 0.5  # Slow, gentle fade
+fallback_color = Color(0.4, 0.4, 0.2, 0.6)  # Muted yellow
+normalized_dimming_type = "Absolute"
+```
+
+### Aggressive Fade
+
+Strong dimming for dramatic effect:
+
+```gdscript Strong Dimming
+# Colors
+main_color = Color.CYAN
+
+# Color Dimming
+dimming = true
+dimming_speed = 5.0  # Fast, aggressive fade
+fallback_color = Color(0.0, 0.0, 0.0, 0.0)  # Fully transparent black
+normalized_dimming_type = "Absolute"
+```
+
+The vector completely disappears when magnitude is low.
+
+### Visual vs Absolute Dimming
+
+<CodeGroup>
+
+```gdscript Absolute Dimming
+# Dims based on actual vector value
+# Not affected by vector_scale or length_mode
+
+dimming = true
+dimming_speed = 2.0
+fallback_color = Color.BLACK
+normalized_dimming_type = "Absolute"
+```
+
+```gdscript Visual Dimming
+# Dims based on displayed length
+# Affected by vector_scale and length_mode
+
+dimming = true
+dimming_speed = 2.0
+fallback_color = Color.BLACK
+normalized_dimming_type = "Visual"
+```
+
+```gdscript No Normalized Dimming
+# Dims even when using Normalize length mode
+
+length_mode = "Normalize"
+max_length = 100.0
+
+dimming = true
+dimming_speed = 2.0
+fallback_color = Color.BLACK
+normalized_dimming_type = "None"  # Still dims normalized vectors
+```
+
+</CodeGroup>
+
+## Custom Pivot Modes
+
+Pivot mode changes where the vector originates from.
+
+### Normal Pivot
+
+Default behavior - vector starts from object origin:
+
+```gdscript Normal Pivot
+pivot_mode = "Normal"
+axes_pivot_mode = "Same"  # Axes follow main pivot mode
+```
+
+```
+     ↗ Vector
+    /
+   /
+  • Origin
+```
+
+### Centered Pivot
+
+Vector extends equally in both directions from center:
+
+```gdscript Centered Pivot
+pivot_mode = "Centered"
+axes_pivot_mode = "Same"
+```
+
+```
+    ↗
+   /
+  • Center
+   \
+    ↘
+```
+
+Great for showing forces that push/pull from the center.
+
+### Mixed Pivot (Advanced)
+
+Center main vector but keep axes normal:
+
+```gdscript Mixed Pivot Mode
+pivot_mode = "Centered"    # Main vector centered
+axes_pivot_mode = "Normal"  # Axes start from origin
+```
+
+Creates an interesting split visual:
+- Main vector = Balanced around center
+- X/Y axes = Start from bottom-left origin
+
+Useful for comparing centered forces with component breakdown.
+
+## Arrowhead Customization
+
+### Large, Bold Arrowheads
+
+```gdscript Prominent Arrows
+width = 4.0
+arrowhead = true
+arrowhead_size = 5.0  # Large arrowhead
+```
+
+Creates very visible directional indicators.
+
+### Small, Subtle Arrowheads
+
+```gdscript Minimal Arrows
+width = 2.0
+arrowhead = true
+arrowhead_size = 1.5  # Small, subtle arrowhead
+```
+
+Just enough to show direction without dominating the visual.
+
+### No Arrowheads
+
+```gdscript Clean Lines
+width = 2.0
+arrowhead = false  # Pure line, no arrow
+```
+
+Minimalist look, relies on line length/color for information.
+
+### Arrowhead Scaling
+
+Arrowhead size is relative to line width:
+
+<CodeGroup>
+
+```gdscript Thin Line, Big Arrow
+width = 1.0
+arrowhead_size = 8.0
+# Arrow appears very prominent
+```
+
+```gdscript Thick Line, Small Arrow  
+width = 6.0
+arrowhead_size = 2.0
+# Arrow blends with thick line
+```
+
+```gdscript Balanced
+width = 3.0
+arrowhead_size = 3.0
+# Proportional, harmonious look
+```
+
+</CodeGroup>
+
+## Creative Color Schemes
+
+### Neon Glow
+
+```gdscript Neon Style
+# Colors
+main_color = Color(0.0, 1.0, 1.0, 1.0)  # Bright cyan
+x_axis_color = Color(1.0, 0.0, 1.0, 1.0)  # Bright magenta
+y_axis_color = Color(0.0, 1.0, 0.0, 1.0)  # Bright green
+
+# Rendering
+width = 4.0
+show_axes = true
+```
+
+Vibrant, eye-catching colors perfect for dark backgrounds.
+
+### Pastel Soft
+
+```gdscript Pastel Style
+# Colors
+main_color = Color(1.0, 0.9, 0.7, 0.8)  # Soft peach
+x_axis_color = Color(1.0, 0.7, 0.7, 0.8)  # Soft pink
+y_axis_color = Color(0.7, 1.0, 0.8, 0.8)  # Soft mint
+
+# Rendering
+width = 2.5
+show_axes = true
+```
+
+Gentle, non-intrusive colors that blend with the scene.
+
+### Monochrome Gradient
+
+```gdscript Grayscale Theme
+# Colors
+main_color = Color.WHITE
+x_axis_color = Color(0.7, 0.7, 0.7)  # Light gray
+y_axis_color = Color(0.5, 0.5, 0.5)  # Medium gray
+
+# Rendering
+show_axes = true
+width = 3.0
+```
+
+Professional, clean look for technical documentation.
+
+### Team Colors
+
+Different colors for different players:
+
+<CodeGroup>
+
+```gdscript Player 1 (Blue Team)
+main_color = Color(0.2, 0.5, 1.0)  # Blue
+x_axis_color = Color(0.4, 0.6, 1.0)
+y_axis_color = Color(0.3, 0.55, 1.0)
+```
+
+```gdscript Player 2 (Red Team)
+main_color = Color(1.0, 0.3, 0.2)  # Red
+x_axis_color = Color(1.0, 0.5, 0.4)
+y_axis_color = Color(1.0, 0.4, 0.3)
+```
+
+```gdscript Player 3 (Green Team)
+main_color = Color(0.3, 1.0, 0.3)  # Green
+x_axis_color = Color(0.5, 1.0, 0.5)
+y_axis_color = Color(0.4, 1.0, 0.4)
+```
+
+</CodeGroup>
+
+### Transparent Overlay
+
+```gdscript Semi-Transparent
+# Colors with alpha channel
+main_color = Color(1.0, 1.0, 0.0, 0.5)    # 50% transparent yellow
+x_axis_color = Color(1.0, 0.0, 0.0, 0.4)  # 40% transparent red
+y_axis_color = Color(0.0, 1.0, 0.0, 0.4)  # 40% transparent green
+
+width = 5.0  # Thicker to compensate for transparency
+```
+
+Vectors visible but don't obscure gameplay.
+
+## Length Modes
+
+### Normal Length
+
+```gdscript Actual Values
+length_mode = "Normal"
+vector_scale = 0.5
+```
+
+Shows true vector magnitude (scaled).
+
+### Clamped Length
+
+```gdscript Prevent Overshoot
+length_mode = "Clamp"
+max_length = 150.0
+vector_scale = 1.0
+```
+
+Vectors never exceed `max_length` pixels. Great for:
+- Preventing off-screen vectors
+- Standardizing display across different speeds
+- Keeping UI clean
+
+### Normalized Length
+
+```gdscript Constant Length
+length_mode = "Normalize"
+max_length = 100.0
+vector_scale = 1.0
+```
+
+All vectors appear the same length. Use for:
+- Direction-only visualization
+- Consistent arrow size
+- Hiding magnitude information
+
+**Combine with dimming** to show magnitude through color:
+
+```gdscript Normalized with Dimming
+length_mode = "Normalize"
+max_length = 100.0
+
+dimming = true
+dimming_speed = 2.0
+fallback_color = Color.BLACK
+normalized_dimming_type = "Absolute"  # Dim by actual magnitude
+```
+
+Result: All arrows same length, but brighter = faster.
+
+## Complete Preset Examples
+
+### Preset 1: Debug Mode
+
+Maximum information, technical focus:
+
+```gdscript Debug Preset
+# Show
+show_vectors = true
+show_axes = true
+
+# Rendering
+vector_scale = 0.5
+width = 2.0
+length_mode = "Normal"
+arrowhead = true
+arrowhead_size = 2.5
+pivot_mode = "Normal"
+
+# Colors
+main_color = Color.YELLOW
+x_axis_color = Color.RED
+y_axis_color = Color.GREEN
+rainbow = false
+
+# Dimming: Off
+dimming = false
+```
+
+### Preset 2: Rainbow Direction
+
+Beautiful, direction-focused:
+
+```gdscript Rainbow Preset
+# Show
+show_vectors = true
+show_axes = false
+
+# Rendering
+vector_scale = 1.0
+width = 4.0
+length_mode = "Clamp"
+max_length = 200.0
+arrowhead = true
+arrowhead_size = 4.0
+pivot_mode = "Normal"
+
+# Colors
+rainbow = true
+
+# Dimming
+dimming = true
+dimming_speed = 1.5
+fallback_color = Color(0.1, 0.1, 0.1, 0.2)
+normalized_dimming_type = "Absolute"
+```
+
+### Preset 3: Minimal Clean
+
+Subtle, non-intrusive:
+
+```gdscript Minimal Preset
+# Show
+show_vectors = true
+show_axes = false
+
+# Rendering
+vector_scale = 0.3
+width = 1.5
+length_mode = "Clamp"
+max_length = 100.0
+arrowhead = true
+arrowhead_size = 2.0
+pivot_mode = "Centered"
+
+# Colors
+main_color = Color(1.0, 1.0, 1.0, 0.4)  # Semi-transparent white
+rainbow = false
+dimming = false
+```
+
+### Preset 4: Neon Party
+
+Maximum visual impact:
+
+```gdscript Neon Preset
+# Show
+show_vectors = true
+show_axes = true
+
+# Rendering
+vector_scale = 1.2
+width = 5.0
+length_mode = "Normalize"
+max_length = 150.0
+arrowhead = true
+arrowhead_size = 5.0
+pivot_mode = "Centered"
+
+# Colors
+main_color = Color(0.0, 1.0, 1.0)  # Cyan
+x_axis_color = Color(1.0, 0.0, 1.0)  # Magenta
+y_axis_color = Color(0.0, 1.0, 0.0)  # Green
+rainbow = true  # Overrides main_color
+
+# Dimming
+dimming = true
+dimming_speed = 3.0
+fallback_color = Color(0.0, 0.0, 0.0, 0.0)
+normalized_dimming_type = "Absolute"
+```
+
+## Saving and Sharing Presets
+
+### Save as Resource
+
+1. Configure your VectorDisplaySettings in the Inspector
+2. Click the dropdown next to the Settings resource
+3. Choose **Save** or **Save As**
+4. Save to `res://presets/my_vector_style.tres`
+
+### Reuse Preset
+
+1. Select a VectorDisplay2D node
+2. In Settings property, click **Load**
+3. Choose your saved `.tres` file
+4. Instant styling!
+
+### Share with Team
+
+Commit `.tres` preset files to version control:
+
+```
+res://
+├── presets/
+│   ├── debug_vectors.tres
+│   ├── rainbow_style.tres
+│   ├── neon_glow.tres
+│   └── minimal_clean.tres
+└── ...
+```
+
+Everyone on the team can use the same visual styles.
+
+## Tips for Custom Styling
+
+<Tip>
+  **Test in-game**: Colors that look good in the editor might be hard to see during gameplay. Test with actual game backgrounds.
+</Tip>
+
+<Tip>
+  **Contrast matters**: Ensure vector colors contrast with your game's art. Use complementary colors for visibility.
+</Tip>
+
+<Tip>
+  **Less is more**: Don't enable every feature at once. Sometimes a simple yellow arrow is clearer than a rainbow-dimmed-centered-axes setup.
+</Tip>
+
+<Tip>
+  **Animation**: Combine dimming with velocity changes for animated effects - vectors that "pulse" with acceleration.
+</Tip>
+
+<Warning>
+  Very thick lines (`width > 8`) with large arrowheads can overlap and create visual clutter. Keep proportions balanced.
+</Warning>
+
+## Use Cases by Style
+
+| Style | Best For |
+|-------|----------|
+| **Rainbow mode** | Open-world games, free movement, 360° navigation |
+| **Strong dimming** | Racing games, speed-focused gameplay |
+| **Centered pivot** | Physics puzzles, force visualization |
+| **Normalized length** | Directional indicators, compass-style UI |
+| **Transparent overlay** | Subtle debug tools, non-intrusive feedback |
+| **Axes enabled** | Platformers, grid-based games, educational tools |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Velocity Vectors" icon="gauge" href="/examples/velocity-vectors">
+    Start with basic velocity visualization
+  </Card>
+  <Card title="Acceleration Vectors" icon="gauge-high" href="/examples/acceleration-vectors">
+    Learn to display multiple vectors together
+  </Card>
+</CardGroup>

@@ -1,0 +1,100 @@
+---
+title: Introduction
+description: Learn about Vector Display 2D, a powerful Godot addon for visualizing vectors in your 2D games
+---
+
+## What is Vector Display 2D?
+
+Vector Display 2D is a Godot addon that makes it easy to visualize vectors like velocity, acceleration, forces, and more directly in your 2D games. Whether you're debugging physics interactions, fine-tuning character movement, or showcasing game mechanics, Vector Display 2D provides real-time visual feedback of your vector data.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Easy Setup" icon="rocket">
+    Add a VectorDisplay2D node, configure target and property, and you're done
+  </Card>
+  <Card title="Runtime Toggle" icon="eye">
+    Press Shift+V in-game to show/hide all vector displays instantly
+  </Card>
+  <Card title="Highly Customizable" icon="palette">
+    Change colors, scale, width, arrowheads, pivot modes, and more
+  </Card>
+  <Card title="Performance Optimized" icon="gauge">
+    Smart redraw system only updates when vectors change
+  </Card>
+</CardGroup>
+
+### Visual Customization
+
+- **Color modes**: Rainbow mode, color dimming based on magnitude, custom colors for main vector and axes
+- **Arrowheads**: Optional arrowheads with adjustable size
+- **Component visualization**: Show X and Y axes separately
+- **Length modes**: Normal, clamped, or normalized display
+- **Pivot modes**: Draw from origin or centered on the target
+
+### Reusable Presets
+
+Create and save `VectorDisplaySettings` resources to:
+- Share consistent styling across multiple vector displays
+- Save different presets for various use cases (debug vs presentation mode)
+- Edit settings at runtime without code changes
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Physics Debugging">
+    Visualize velocity, acceleration, and force vectors on physics bodies to understand movement behavior and collision responses.
+  </Accordion>
+  
+  <Accordion title="AI Development">
+    Display steering forces, desired velocity, and separation vectors when developing AI movement and flocking behaviors.
+  </Accordion>
+  
+  <Accordion title="Player Feedback">
+    Show directional indicators like aiming direction, throw trajectory, or momentum for better player understanding.
+  </Accordion>
+  
+  <Accordion title="Educational Content">
+    Create interactive physics demonstrations or tutorials with clear vector visualization.
+  </Accordion>
+</AccordionGroup>
+
+## What You Can Visualize
+
+Any `Vector2` property from any node can be displayed:
+- `velocity` and `acceleration` from CharacterBody2D or RigidBody2D
+- Custom script variables like `steering_force` or `desired_velocity`
+- Calculated vectors from your game logic
+- Input directions or aiming vectors
+
+<Note>
+  The addon currently supports 2D vectors only. 3D compatibility is planned for version 2.
+</Note>
+
+## Quick Example
+
+```gdscript
+# On your CharacterBody2D
+extends CharacterBody2D
+
+var velocity = Vector2.ZERO
+var acceleration = Vector2.ZERO
+
+func _physics_process(delta):
+    acceleration = Vector2(Input.get_axis("left", "right"), 0) * 500
+    velocity += acceleration * delta
+    move_and_slide()
+```
+
+With Vector Display 2D, you can instantly see these vectors by adding VectorDisplay2D nodes - no additional code required!
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Download and install the addon in your Godot project
+  </Card>
+  <Card title="Quick Start" icon="bolt" href="/quickstart">
+    Get your first vector displaying in under 5 minutes
+  </Card>
+</CardGroup>

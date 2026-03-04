@@ -1,0 +1,411 @@
+---
+title: Runtime Configuration
+description: Dynamically modify vector display settings during gameplay
+---
+
+Vector Display 2D settings can be modified at runtime, allowing you to create dynamic visualizations that respond to gameplay events, player actions, or debugging needs.
+
+## Accessing Settings at Runtime
+
+The `VectorDisplaySettings` resource on your VectorDisplay2D node can be accessed and modified from any script:
+
+```gdscript
+extends CharacterBody2D
+
+@onready var vector_display = $VectorDisplay2D
+
+func _ready():
+    # Access the settings resource
+    var settings = vector_display.settings
+    
+    # Modify any property
+    settings.main_color = Color.CYAN
+    settings.vector_scale = 2.0
+```
+
+<Note>
+  Changes to settings automatically trigger a redraw. The addon listens to the `changed` signal on the settings resource.
+</Note>
+
+## Common Runtime Modifications
+
+### Dynamic Color Changes
+
+Change colors based on game state or vector properties:
+
+```gdscript
+extends CharacterBody2D
+
+@onready var vector_display = $VectorDisplay2D
+const MAX_SPEED = 500.0
+
+func _physics_process(delta):
+    # Change color based on speed
+    var speed = velocity.length()
+    var speed_ratio = speed / MAX_SPEED
+    
+    if speed_ratio > 0.8:
+        vector_display.settings.main_color = Color.RED  # Danger: too fast!
+    elif speed_ratio > 0.5:
+        vector_display.settings.main_color = Color.ORANGE  # Warning: fast
+    else:
+        vector_display.settings.main_color = Color.GREEN  # Safe speed
+    
+    move_and_slide()
+```
+
+### Toggle Rainbow Mode
+
+```gdscript
+func _input(event):
+    if event.is_action_pressed("toggle_rainbow"):
+        vector_display.settings.rainbow = !vector_display.settings.rainbow
+```
+
+### Smooth Color Transitions
+
+```gdscript
+var target_color = Color.YELLOW
+var current_color = Color.YELLOW
+
+func _process(delta):
+    # Smoothly interpolate color
+    current_color = current_color.lerp(target_color, delta * 5.0)
+    vector_display.settings.main_color = current_color
+
+func on_damage_taken():
+    target_color = Color.RED
+
+func on_healed():
+    target_color = Color.GREEN
+```
+
+## Toggling Visibility
+
+### Programmatic Visibility Control
+
+```gdscript
+# Toggle all vectors on/off
+vector_display.settings.show_vectors = false  # Hide
+vector_display.settings.show_vectors = true   # Show
+
+# Toggle axes separately
+vector_display.settings.show_axes = !vector_display.settings.show_axes
+```
+
+### Debug Mode Toggle
+
+```gdscript
+extends Node2D
+
+var debug_mode = false
+@onready var vector_displays = get_tree().get_nodes_in_group("vector_displays")
+
+func _input(event):
+    if event.is_action_pressed("toggle_debug"):
+        debug_mode = !debug_mode
+        
+        # Toggle all vector displays in the scene
+        for display in vector_displays:
+            if display is VectorDisplay2D:
+                display.settings.show_vectors = debug_mode
+```
+
+<Tip>
+  Add your VectorDisplay2D nodes to a "vector_displays" group in the editor for easy batch control.
+</Tip>
+
+### Conditional Display
+
+```gdscript
+func _process(delta):
+    # Only show vectors when moving
+    var is_moving = velocity.length() > 10.0
+    vector_display.settings.show_vectors = is_moving
+```
+
+## Dynamic Scale Adjustments
+
+### Auto-Scale Based on Magnitude
+
+```gdscript
+func _process(delta):
+    var speed = velocity.length()
+    
+    # Automatically adjust scale to keep vectors visible
+    if speed > 1000:
+        vector_display.settings.vector_scale = 0.1
+    elif speed > 500:
+        vector_display.settings.vector_scale = 0.25
+    elif speed > 100:
+        vector_display.settings.vector_scale = 0.5
+    else:
+        vector_display.settings.vector_scale = 1.0
+```
+
+### Camera-Based Scaling
+
+```gdscript
+@onready var camera = get_viewport().get_camera_2d()
+
+func _process(delta):
+    # Adjust vector scale based on camera zoom
+    var zoom_level = camera.zoom.x
+    vector_display.settings.vector_scale = 1.0 / zoom_level
+```
+
+## Mode Switching
+
+### Switch Length Modes
+
+```gdscript
+enum VectorMode { NORMAL, CLAMPED, DIRECTION_ONLY }
+
+var current_mode = VectorMode.NORMAL
+
+func set_vector_mode(mode: VectorMode):
+    match mode:
+        VectorMode.NORMAL:
+            vector_display.settings.length_mode = "Normal"
+        VectorMode.CLAMPED:
+            vector_display.settings.length_mode = "Clamp"
+            vector_display.settings.max_length = 100
+        VectorMode.DIRECTION_ONLY:
+            vector_display.settings.length_mode = "Normalize"
+            vector_display.settings.max_length = 50
+
+func _input(event):
+    if event.is_action_pressed("cycle_mode"):
+        current_mode = (current_mode + 1) % 3
+        set_vector_mode(current_mode)
+```
+
+### Toggle Pivot Modes
+
+```gdscript
+func toggle_pivot():
+    if vector_display.settings.pivot_mode == "Normal":
+        vector_display.settings.pivot_mode = "Centered"
+    else:
+        vector_display.settings.pivot_mode = "Normal"
+```
+
+## Advanced Examples
+
+### Multi-State Visualization
+
+```gdscript
+extends CharacterBody2D
+
+enum State { IDLE, WALKING, RUNNING, DASHING }
+
+var state = State.IDLE
+@onready var vector_display = $VectorDisplay2D
+
+func _ready():
+    update_vector_style()
+
+func update_vector_style():
+    var settings = vector_display.settings
+    
+    match state:
+        State.IDLE:
+            settings.show_vectors = false
+        State.WALKING:
+            settings.show_vectors = true
+            settings.main_color = Color.GREEN
+            settings.width = 2.0
+            settings.dimming = true
+        State.RUNNING:
+            settings.show_vectors = true
+            settings.main_color = Color.YELLOW
+            settings.width = 3.0
+            settings.rainbow = false
+        State.DASHING:
+            settings.show_vectors = true
+            settings.rainbow = true
+            settings.width = 4.0
+            settings.arrowhead_size = 6.0
+
+func change_state(new_state: State):
+    state = new_state
+    update_vector_style()
+```
+
+### Debug Overlay with Hotkeys
+
+```gdscript
+extends Node2D
+
+@onready var vector_display = $Player/VectorDisplay2D
+
+func _input(event):
+    var settings = vector_display.settings
+    
+    # F1: Toggle vectors
+    if event.is_action_pressed("debug_toggle_vectors"):
+        settings.show_vectors = !settings.show_vectors
+    
+    # F2: Toggle axes
+    if event.is_action_pressed("debug_toggle_axes"):
+        settings.show_axes = !settings.show_axes
+    
+    # F3: Cycle length modes
+    if event.is_action_pressed("debug_cycle_mode"):
+        match settings.length_mode:
+            "Normal": settings.length_mode = "Clamp"
+            "Clamp": settings.length_mode = "Normalize"
+            "Normalize": settings.length_mode = "Normal"
+    
+    # F4: Toggle rainbow
+    if event.is_action_pressed("debug_toggle_rainbow"):
+        settings.rainbow = !settings.rainbow
+    
+    # +/-: Adjust scale
+    if event.is_action_pressed("debug_scale_up"):
+        settings.vector_scale *= 1.5
+    if event.is_action_pressed("debug_scale_down"):
+        settings.vector_scale /= 1.5
+```
+
+### Performance-Aware Updates
+
+```gdscript
+extends CharacterBody2D
+
+@onready var vector_display = $VectorDisplay2D
+
+# Cache settings reference
+var vd_settings: VectorDisplaySettings
+
+# Only update when needed
+var last_speed_category = -1
+
+func _ready():
+    vd_settings = vector_display.settings
+
+func _physics_process(delta):
+    var speed = velocity.length()
+    var speed_category = int(speed / 100)  # Group by hundreds
+    
+    # Only update settings when speed category changes
+    if speed_category != last_speed_category:
+        update_color_for_speed(speed_category)
+        last_speed_category = speed_category
+    
+    move_and_slide()
+
+func update_color_for_speed(category: int):
+    match category:
+        0: vd_settings.main_color = Color.GREEN
+        1, 2: vd_settings.main_color = Color.YELLOW
+        _: vd_settings.main_color = Color.RED
+```
+
+<Note>
+  VectorDisplay2D already optimizes rendering by only redrawing when the vector changes. Additional caching like above is only needed for expensive operations.
+</Note>
+
+## Swapping Settings Resources
+
+You can swap entire settings resources at runtime:
+
+```gdscript
+# Preload different preset resources
+const PRESET_DEBUG = preload("res://presets/debug_vectors.tres")
+const PRESET_GAMEPLAY = preload("res://presets/gameplay_vectors.tres")
+const PRESET_CINEMATIC = preload("res://presets/cinematic_vectors.tres")
+
+func set_preset(preset: VectorDisplaySettings):
+    vector_display.settings = preset
+    # Reconnect the changed signal
+    preset.changed.connect(vector_display.queue_redraw)
+
+func enter_debug_mode():
+    set_preset(PRESET_DEBUG)
+
+func enter_gameplay():
+    set_preset(PRESET_GAMEPLAY)
+```
+
+<Warning>
+  When swapping settings resources, the old resource's `changed` signal remains connected. If you're changing settings frequently, consider modifying properties instead of swapping resources.
+</Warning>
+
+## Performance Considerations
+
+### Optimization Tips
+
+<Steps>
+  <Step title="Minimize unnecessary updates">
+    ```gdscript
+    # Bad: Updates every frame
+    func _process(delta):
+        vector_display.settings.main_color = get_color_for_velocity()
+    
+    # Good: Only update when velocity category changes
+    var last_color = Color.WHITE
+    func _process(delta):
+        var new_color = get_color_for_velocity()
+        if new_color != last_color:
+            vector_display.settings.main_color = new_color
+            last_color = new_color
+    ```
+  </Step>
+
+  <Step title="Cache settings reference">
+    ```gdscript
+    # Cache the settings reference
+    var vd_settings: VectorDisplaySettings
+    
+    func _ready():
+        vd_settings = vector_display.settings
+    
+    func update():
+        vd_settings.main_color = Color.RED  # Direct access
+    ```
+  </Step>
+
+  <Step title="Batch multiple changes">
+    ```gdscript
+    # Changes trigger redraws automatically via the 'changed' signal
+    # Multiple changes in one frame still only trigger one redraw
+    func apply_dash_style():
+        var s = vector_display.settings
+        s.width = 4.0
+        s.main_color = Color.ORANGE
+        s.arrowhead_size = 6.0
+        s.rainbow = true
+        # Only one redraw queued
+    ```
+  </Step>
+
+  <Step title="Disable when not needed">
+    ```gdscript
+    # Hide vectors in release builds
+    func _ready():
+        if not OS.is_debug_build():
+            vector_display.settings.show_vectors = false
+    ```
+  </Step>
+</Steps>
+
+### Built-in Optimizations
+
+The addon automatically optimizes performance:
+
+- **Conditional redrawing**: Only redraws when vectors actually change
+- **Zero-vector detection**: Skips rendering for zero-length vectors
+- **Small arrowhead culling**: Hides arrowheads on tiny vectors
+
+```gdscript
+# From vector_display_2d.gd (internal optimization)
+if current_vector == new_vector and is_equal_approx(current_raw_length, new_raw_length):
+    return  # Skip redraw
+```
+
+## Next Steps
+
+- Create reusable [presets](/guides/presets) for different runtime configurations
+- Customize [keyboard shortcuts](/guides/keyboard-shortcuts) for quick testing
+- Explore all [customization options](/guides/customization)

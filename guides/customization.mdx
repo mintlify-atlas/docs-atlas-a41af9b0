@@ -1,0 +1,387 @@
+---
+title: Customization
+description: Comprehensive guide to all VectorDisplaySettings customization options
+---
+
+Vector Display 2D offers extensive customization options through the `VectorDisplaySettings` resource. This guide covers all available settings to help you create the perfect visual representation for your vectors.
+
+## Accessing Settings
+
+All customization is done through the `VectorDisplaySettings` resource attached to your VectorDisplay2D node:
+
+```gdscript
+# In the Inspector:
+# VectorDisplay2D > Settings > (click to expand)
+```
+
+You can also access settings via code:
+
+```gdscript
+@onready var vector_display = $VectorDisplay2D
+
+func _ready():
+    vector_display.settings.main_color = Color.CYAN
+    vector_display.settings.vector_scale = 2.0
+```
+
+## Show Options
+
+Control visibility of different vector components.
+
+### Show Vectors
+
+```gdscript
+@export var show_vectors: bool = true
+```
+
+Toggle visibility of all vectors. This is the master switch controlled by the Shift+V shortcut.
+
+**Use cases:**
+- Debugging: Quickly hide/show vectors without removing the node
+- Production: Disable for release builds
+- Conditional display: Show only when certain game states are active
+
+### Show Axes
+
+```gdscript
+@export var show_axes: bool = false
+```
+
+Display the X and Y component vectors separately alongside the main vector.
+
+<Tabs>
+  <Tab title="Disabled (default)">
+    Shows only the main vector (yellow arrow from origin to endpoint).
+  </Tab>
+  <Tab title="Enabled">
+    Shows three vectors:
+    - **Main vector** (yellow): The actual vector
+    - **X component** (red): Horizontal component
+    - **Y component** (green): Vertical component
+  </Tab>
+</Tabs>
+
+<Tip>
+  Enable axes when debugging physics or movement to see exactly how much horizontal vs vertical velocity you have.
+</Tip>
+
+## Rendering Options
+
+Control how vectors are rendered and displayed.
+
+### Vector Scale
+
+```gdscript
+@export_range(0.05, 100, 0.05, "exp", "or_greater") var vector_scale: float = 1
+```
+
+Multiplies the visual length of vectors without changing the actual vector values.
+
+**Examples:**
+- `vector_scale = 0.5` - Half size (useful for large velocities)
+- `vector_scale = 1.0` - Original size (1 pixel = 1 unit)
+- `vector_scale = 2.0` - Double size (useful for small forces)
+
+```gdscript
+# Make tiny forces visible
+settings.vector_scale = 10.0  # 10 pixels per unit
+
+# Shrink large velocities
+settings.vector_scale = 0.1  # 0.1 pixels per unit
+```
+
+### Line Width
+
+```gdscript
+@export_range(0.1, 10, 0.1, "exp", "or_greater") var width: float = 2
+```
+
+Line thickness in pixels. Affects both the vector line and arrowhead size.
+
+**Recommendations:**
+- `1.0-2.0` - Clean, minimal look
+- `3.0-5.0` - Bold, easy to see during gameplay
+- `6.0+` - High visibility for presentations or screenshots
+
+### Length Modes
+
+```gdscript
+@export_enum("Normal", "Clamp", "Normalize") var length_mode: String = "Normal"
+@export_range(0.1, 1000, 0.1, "exp", "or_greater") var max_length: float = 100
+```
+
+Control how vector lengths are displayed:
+
+<Tabs>
+  <Tab title="Normal">
+    Displays vectors at their true length (scaled by `vector_scale`).
+
+    ```gdscript
+    # velocity = Vector2(100, 50)
+    # Displayed length = sqrt(100² + 50²) * vector_scale
+    ```
+
+    **Best for:** Most use cases where you want accurate representation.
+  </Tab>
+
+  <Tab title="Clamp">
+    Limits vector length to `max_length` while preserving direction.
+
+    ```gdscript
+    settings.length_mode = "Clamp"
+    settings.max_length = 100
+    # Vectors longer than 100 pixels are capped at 100
+    # Shorter vectors remain unchanged
+    ```
+
+    **Best for:** Preventing extremely long vectors from cluttering the screen.
+  </Tab>
+
+  <Tab title="Normalize">
+    Forces all vectors to exactly `max_length` pixels, showing only direction.
+
+    ```gdscript
+    settings.length_mode = "Normalize"
+    settings.max_length = 50
+    # All vectors shown as 50-pixel arrows
+    # Only direction matters, magnitude is ignored visually
+    ```
+
+    **Best for:** Focusing purely on direction, ignoring magnitude.
+  </Tab>
+</Tabs>
+
+<Note>
+  These modes only affect the **visual** display. The actual vector values in your code remain unchanged.
+</Note>
+
+### Arrowhead
+
+```gdscript
+@export var arrowhead: bool = true
+@export_range(0.1, 10, 0.1, "exp", "or_greater") var arrowhead_size: float = 3.0
+```
+
+Adds a triangular arrowhead to indicate vector direction.
+
+```gdscript
+# Disable arrowhead for minimal lines
+settings.arrowhead = false
+
+# Adjust arrowhead size (multiplier of line width)
+settings.arrowhead_size = 5.0  # Larger arrowheads
+settings.arrowhead_size = 1.5  # Smaller, subtle arrowheads
+```
+
+**Note:** The actual arrowhead size = `width * arrowhead_size * 2` pixels. Arrowheads automatically hide when vectors are too small.
+
+### Pivot Modes
+
+```gdscript
+@export_enum("Normal", "Centered") var pivot_mode: String = "Normal"
+@export_enum("Same", "Normal", "Centered") var axes_pivot_mode: String = "Same"
+```
+
+Control where vectors originate from:
+
+<Tabs>
+  <Tab title="Normal">
+    Vector starts at the node's origin (0, 0) and points to the vector's endpoint.
+
+    ```
+    Origin •--------→ (velocity)
+    ```
+
+    **Best for:** Most gameplay situations (velocity, acceleration, forces).
+  </Tab>
+
+  <Tab title="Centered">
+    Vector is centered on the node's origin, extending equally in both directions.
+
+    ```
+           ←----•----→
+         (-v/2) • (v/2)
+    ```
+
+    **Best for:** Symmetrical visualization, balancing displays.
+  </Tab>
+</Tabs>
+
+The `axes_pivot_mode` controls whether the X/Y component axes follow the same pivot as the main vector or use their own:
+- `"Same"` (default) - Axes use same pivot as main vector
+- `"Normal"` - Force axes to use Normal pivot
+- `"Centered"` - Force axes to use Centered pivot
+
+<Tip>
+  Keep `axes_pivot_mode` as "Same" for intuitive behavior. Override only for specialized visualizations.
+</Tip>
+
+## Color Customization
+
+Full control over vector colors.
+
+### Basic Colors
+
+```gdscript
+@export var main_color: Color = Color.YELLOW
+@export var x_axis_color: Color = Color.RED
+@export var y_axis_color: Color = Color.GREEN
+```
+
+Set the base colors for vectors:
+
+```gdscript
+# Classic style
+settings.main_color = Color.YELLOW
+settings.x_axis_color = Color.RED
+settings.y_axis_color = Color.GREEN
+
+# Cyan/Magenta style
+settings.main_color = Color.CYAN
+settings.x_axis_color = Color.MAGENTA
+settings.y_axis_color = Color.ORANGE
+
+# Monochrome
+settings.main_color = Color.WHITE
+settings.x_axis_color = Color.GRAY
+settings.y_axis_color = Color.DARK_GRAY
+```
+
+### Rainbow Mode
+
+```gdscript
+@export var rainbow: bool = false
+```
+
+Dynamically colors the main vector based on its angle, creating a rainbow effect.
+
+```gdscript
+settings.rainbow = true
+# Right  (0°)   = Red
+# Up     (90°)  = Cyan  
+# Left   (180°) = Green
+# Down   (270°) = Magenta
+```
+
+<Note>
+  Rainbow mode only affects the main vector. Axes keep their configured colors.
+</Note>
+
+**Perfect for:** Visualizing rotation, angular velocity, or directional changes.
+
+## Color Dimming
+
+Fade vector colors based on magnitude.
+
+```gdscript
+@export var dimming: bool = false
+@export_range(0.01, 10, 0.01, "or_greater") var dimming_speed: float = 1
+@export var fallback_color: Color = Color.BLACK
+@export_enum("None", "Absolute", "Visual") var normalized_dimming_type: String = "None"
+```
+
+When enabled, vectors fade toward `fallback_color` as they get shorter.
+
+### Dimming Configuration
+
+<Steps>
+  <Step title="Enable dimming">
+    ```gdscript
+    settings.dimming = true
+    ```
+  </Step>
+
+  <Step title="Set fallback color">
+    ```gdscript
+    settings.fallback_color = Color.BLACK  # Fade to black
+    # or
+    settings.fallback_color = Color(0.2, 0.2, 0.2)  # Fade to dark gray
+    ```
+  </Step>
+
+  <Step title="Adjust dimming speed">
+    ```gdscript
+    settings.dimming_speed = 1.0   # Default fade rate
+    settings.dimming_speed = 0.5   # Slower fade (visible longer)
+    settings.dimming_speed = 2.0   # Faster fade (quick transition)
+    ```
+
+    Higher values = faster fading at shorter lengths.
+  </Step>
+
+  <Step title="Choose dimming type (for Normalize mode)">
+    When using `length_mode = "Normalize"`, you can control what dimming is based on:
+
+    - `"None"` - No dimming (all normalized vectors stay bright)
+    - `"Absolute"` - Dim based on actual vector length (before normalization)
+    - `"Visual"` - Dim based on displayed length (after normalization)
+
+    ```gdscript
+    settings.length_mode = "Normalize"
+    settings.normalized_dimming_type = "Absolute"
+    # Normalized arrows still fade based on original magnitude
+    ```
+  </Step>
+</Steps>
+
+### Dimming Examples
+
+```gdscript
+# Example 1: Fade velocity to dark when stopping
+settings.dimming = true
+settings.dimming_speed = 1.5
+settings.fallback_color = Color(0.1, 0.1, 0.1)
+
+# Example 2: Fade to red when force is weak
+settings.dimming = true
+settings.dimming_speed = 2.0
+settings.fallback_color = Color.DARK_RED
+
+# Example 3: Rainbow + dimming
+settings.rainbow = true
+settings.dimming = true
+settings.fallback_color = Color.BLACK
+```
+
+## Complete Customization Example
+
+Here's a fully customized setup for debugging player velocity:
+
+```gdscript
+extends CharacterBody2D
+
+@onready var vector_display = $VectorDisplay2D
+
+func _ready():
+    var settings = vector_display.settings
+    
+    # Visibility
+    settings.show_vectors = true
+    settings.show_axes = true
+    
+    # Rendering
+    settings.vector_scale = 0.5  # Shrink fast velocities
+    settings.width = 3.0  # Thick, visible lines
+    settings.length_mode = "Clamp"
+    settings.max_length = 150  # Cap at 150 pixels
+    settings.arrowhead = true
+    settings.arrowhead_size = 4.0
+    settings.pivot_mode = "Normal"
+    
+    # Colors
+    settings.main_color = Color.CYAN
+    settings.x_axis_color = Color.RED
+    settings.y_axis_color = Color.GREEN
+    settings.rainbow = false
+    
+    # Dimming
+    settings.dimming = true
+    settings.dimming_speed = 1.0
+    settings.fallback_color = Color(0.2, 0.2, 0.2, 0.5)
+```
+
+## Next Steps
+
+- Learn how to modify these settings at [runtime](/guides/runtime-configuration)
+- Save your configurations as reusable [presets](/guides/presets)
+- Customize the [visibility shortcut](/guides/keyboard-shortcuts)

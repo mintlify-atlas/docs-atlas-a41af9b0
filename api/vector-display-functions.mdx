@@ -1,0 +1,327 @@
+---
+title: VectorDisplayFunctions
+description: Static utility class providing core vector display calculations and validation
+---
+
+## Overview
+
+The `VectorDisplayFunctions` class extends `RefCounted` and provides a collection of static utility functions used internally by the VectorDisplay2D node. These functions handle validation, transformations, color calculations, and position computations.
+
+## Class Definition
+
+```gdscript
+class_name VectorDisplayFunctions extends RefCounted
+```
+
+## Static Methods
+
+### check_targets_and_settings()
+
+```gdscript
+static func check_targets_and_settings(
+    self_node: Node,
+    target_node: Node,
+    target_property: String,
+    settings: VectorDisplaySettings
+)
+```
+
+Validates the target node, its property value, and settings resource. Called during `_ready()` initialization.
+
+**Parameters:**
+- `self_node`: The VectorDisplay2D node instance
+- `target_node`: The node to validate (can be null for auto-assignment)
+- `target_property`: Name of the Vector2 property to validate
+- `settings`: The settings resource to validate
+
+**Behavior:**
+- If `target_node` is null, auto-assigns to `self_node`'s parent and warns
+- Pushes error if target node is invalid after assignment
+- Pushes error if `target_property` is not a Vector2 or doesn't exist
+- Pushes error if `settings` is null
+
+**When Used:**
+Called once during node initialization to ensure valid configuration.
+
+---
+
+### apply_lenght_mode()
+
+```gdscript
+static func apply_lenght_mode(vector, settings: VectorDisplaySettings)
+```
+
+Processes a vector to apply the configured length mode transformation.
+
+**Parameters:**
+- `vector`: The vector to transform (Vector2 or Vector3)
+- `settings`: Settings resource containing the length mode configuration
+
+**Returns:**
+- Transformed vector based on length mode
+- `null` if length mode is invalid
+
+**Length Modes:**
+- `"Normal"`: Returns vector unchanged
+- `"Clamp"`: Returns `vector.limit_length(settings.max_length)`
+- `"Normalize"`: Returns `vector.normalized() * settings.max_length`
+
+**When Used:**
+Called every frame in `_process()` to transform the display vector without modifying the original value.
+
+**Example:**
+```gdscript
+var velocity = Vector2(150, 200)  # Large velocity
+var settings = VectorDisplaySettings.new()
+settings.length_mode = "Clamp"
+settings.max_length = 100
+
+var display_vector = VectorDisplayFunctions.apply_lenght_mode(velocity, settings)
+# display_vector is clamped to length 100 while maintaining direction
+```
+
+---
+
+### calculate_draw_colors()
+
+```gdscript
+static func calculate_draw_colors(
+    vector,
+    current_raw_length: float,
+    settings: VectorDisplaySettings
+) -> Dictionary
+```
+
+Calculates final rendering colors based on rainbow and dimming settings.
+
+**Parameters:**
+- `vector`: The current display vector (Vector2 or Vector3)
+- `current_raw_length`: The original vector length before transformations
+- `settings`: Settings resource with color configuration
+
+**Returns:**
+Dictionary with color values:
+```gdscript
+{
+    "main": Color,  # Main vector color
+    "x": Color,     # X axis color
+    "y": Color,     # Y axis color
+    "z": Color      # Z axis color (only for Vector3)
+}
+```
+
+**Color Transformations:**
+1. **Rainbow Mode**: If enabled, calculates `main` color from vector angle using HSV (hue from 0 to 1 based on angle)
+2. **Dimming Mode**: If enabled, lerps all colors toward `fallback_color` based on vector length
+
+**Dimming Calculation:**
+```gdscript
+dimming_value = clamp(dimming_speed * 10 / length, 0.0, 1.0)
+final_color = original_color.lerp(fallback_color, dimming_value)
+```
+
+**When Used:**
+Called in `_draw()` before rendering to determine final colors for all vector components.
+
+---
+
+### get_main_vector_position()
+
+```gdscript
+static func get_main_vector_position(
+    vector,
+    settings: VectorDisplaySettings
+) -> Dictionary
+```
+
+Calculates the start and end positions for the main vector based on pivot mode.
+
+**Parameters:**
+- `vector`: The display vector (Vector2 or Vector3)
+- `settings`: Settings resource containing pivot mode
+
+**Returns:**
+Dictionary with position values:
+```gdscript
+{
+    "begin": Vector2/Vector3,  # Start position
+    "end": Vector2/Vector3      # End position
+}
+```
+
+**Pivot Modes:**
+- `"Normal"`: Begin at origin, end at vector position
+  ```gdscript
+  begin = Vector2.ZERO
+  end = vector
+  ```
+- `"Centered"`: Centered around origin
+  ```gdscript
+  begin = -vector / 2
+  end = vector / 2
+  ```
+
+**When Used:**
+Called in `_draw()` to determine where to render the main vector line.
+
+---
+
+### get_axes_positions()
+
+```gdscript
+static func get_axes_positions(
+    vector,
+    settings: VectorDisplaySettings
+) -> Dictionary
+```
+
+Calculates start and end positions for X and Y axis component vectors.
+
+**Parameters:**
+- `vector`: The display vector (Vector2 or Vector3)
+- `settings`: Settings resource containing pivot modes
+
+**Returns:**
+Dictionary with axis positions:
+```gdscript
+{
+    "x_begin": Vector2,
+    "x_end": Vector2,
+    "y_begin": Vector2,
+    "y_end": Vector2,
+    "z_begin": Vector3,  # Only for Vector3
+    "z_end": Vector3     # Only for Vector3
+}
+```
+
+**Pivot Mode Combinations:**
+
+1. **Normal axes, Normal main** or **axes_pivot_mode = "Normal"**:
+   ```gdscript
+   x_begin = Vector2.ZERO
+   x_end = Vector2(vector.x, 0)
+   y_begin = Vector2.ZERO
+   y_end = Vector2(0, vector.y)
+   ```
+
+2. **Centered axes, Centered main** or **axes_pivot_mode = "Centered"**:
+   ```gdscript
+   x_begin = -Vector2(vector.x / 2, 0)
+   x_end = Vector2(vector.x / 2, 0)
+   y_begin = -Vector2(0, vector.y / 2)
+   y_end = Vector2(0, vector.y / 2)
+   ```
+
+3. **Normal axes, Centered main** (special case):
+   ```gdscript
+   # Normal axes offset by half vector
+   x_begin = -vector / 2
+   x_end = Vector2(vector.x, 0) - vector / 2
+   y_begin = -vector / 2
+   y_end = Vector2(0, vector.y) - vector / 2
+   ```
+
+**When Used:**
+Called in `_draw()` when `show_axes` is true to render component breakdown.
+
+---
+
+### check_shortcut()
+
+```gdscript
+static func check_shortcut(
+    event: InputEvent,
+    settings: VectorDisplaySettings
+) -> bool
+```
+
+Checks if an input event matches the visibility toggle shortcut.
+
+**Parameters:**
+- `event`: The input event to check
+- `settings`: Settings resource containing the shortcut configuration
+
+**Returns:**
+- `true` if the shortcut was matched and handled
+- `false` if the event doesn't match the shortcut
+
+**Behavior:**
+- Checks if event is pressed (not released)
+- Checks if event is not an echo (prevents key repeat)
+- Checks if event matches `settings.SHORTCUT`
+- If matched, toggles `settings.show_vectors` and returns true
+
+**When Used:**
+Called in `_unhandled_key_input()` to handle keyboard shortcuts for toggling visibility.
+
+**Example:**
+```gdscript
+func _unhandled_key_input(event: InputEvent) -> void:
+    if VectorDisplayFunctions.check_shortcut(event, settings):
+        get_viewport().set_input_as_handled()
+        # Visibility has been toggled
+```
+
+---
+
+### _is_vector_type() (Internal)
+
+```gdscript
+static func _is_vector_type(vector) -> bool
+```
+
+Internal helper function to validate vector type.
+
+**Parameters:**
+- `vector`: Value to check
+
+**Returns:**
+- `true` if vector is Vector2 or Vector3
+- `false` otherwise (also pushes error)
+
+**When Used:**
+Called internally by other functions to validate input before processing.
+
+## Usage Notes
+
+- All functions are static and can be called without instantiating the class
+- Functions are designed to work with both Vector2 and Vector3 (future 3D support)
+- Error messages use the `[VectorDisplay]` prefix for easy identification
+- These functions are primarily for internal use by VectorDisplay2D
+- The functions handle edge cases like zero-length vectors and invalid inputs gracefully
+
+## Integration Example
+
+```gdscript
+# These functions are used internally by VectorDisplay2D
+# Typical flow in VectorDisplay2D:
+
+func _ready():
+    # 1. Validate configuration
+    VectorDisplayFunctions.check_targets_and_settings(
+        self, target_node, target_property, settings
+    )
+
+func _process(_delta):
+    # 2. Apply length transformation
+    var display_vector = VectorDisplayFunctions.apply_lenght_mode(
+        raw_vector, settings
+    )
+
+func _draw():
+    # 3. Calculate colors
+    var colors = VectorDisplayFunctions.calculate_draw_colors(
+        current_vector, current_raw_length, settings
+    )
+    
+    # 4. Get positions
+    var main_pos = VectorDisplayFunctions.get_main_vector_position(
+        current_vector, settings
+    )
+    var axes_pos = VectorDisplayFunctions.get_axes_positions(
+        current_vector, settings
+    )
+    
+    # 5. Draw using calculated values
+    draw_line(main_pos.begin, main_pos.end, colors.main, settings.width)
+```

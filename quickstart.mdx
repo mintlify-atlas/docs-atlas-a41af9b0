@@ -1,80 +1,282 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start"
+description: "Get your first vector displaying in under 5 minutes"
 ---
 
-## Get started in three steps
+This guide will walk you through setting up Vector Display 2D in your Godot project and visualizing your first vector.
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+## Prerequisites
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Make sure you have already [installed Vector Display 2D](/installation) and enabled the plugin in your Godot project.
 </Note>
+
+## Creating Your First Vector Display
+
+<Steps>
+  <Step title="Create a scene with a moving object">
+    First, you need an object with a Vector2 property to visualize. Let's create a simple character that moves with velocity.
+
+    Create a new scene with a `CharacterBody2D` node and attach this script:
+
+    ```gdscript player.gd
+    extends CharacterBody2D
+
+    const SPEED = 300.0
+    const JUMP_VELOCITY = -400.0
+
+    func _physics_process(delta):
+        # Add gravity
+        if not is_on_floor():
+            velocity += get_gravity() * delta
+
+        # Handle jump
+        if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+            velocity.y = JUMP_VELOCITY
+
+        # Get input direction and handle movement
+        var direction = Input.get_axis("ui_left", "ui_right")
+        if direction:
+            velocity.x = direction * SPEED
+        else:
+            velocity.x = move_toward(velocity.x, 0, SPEED)
+
+        move_and_slide()
+    ```
+
+    <Note>
+      The `velocity` property is a Vector2 that we'll visualize with Vector Display 2D.
+    </Note>
+  </Step>
+
+  <Step title="Add a VectorDisplay2D node">
+    With your CharacterBody2D selected in the scene tree, add a child node. Search for **VectorDisplay2D** in the node creation dialog.
+
+    Your scene tree should look like this:
+
+    ```
+    CharacterBody2D (player.gd)
+    └── VectorDisplay2D
+    ```
+
+    <Tip>
+      The VectorDisplay2D node will render the vector as a child of your character, so it moves with the character automatically.
+    </Tip>
+  </Step>
+
+  <Step title="Configure the target">
+    Select the VectorDisplay2D node and configure it in the Inspector:
+
+    1. **Target Node**: Click the dropdown and select `..` (parent) - this points to your CharacterBody2D
+    2. **Target Property**: Type `velocity` - this is the Vector2 property we want to display
+
+    <Info>
+      If you leave Target Node empty, it will automatically use the parent node.
+    </Info>
+  </Step>
+
+  <Step title="Create a VectorDisplaySettings resource">
+    In the Inspector for VectorDisplay2D, you'll see a **Settings** property. Click the dropdown and select **New VectorDisplaySettings**.
+
+    Click the resource to expand it and configure these basic settings:
+
+    - **Show Vectors**: ✓ (enabled)
+    - **Show Axes**: ✓ (enabled to see X and Y components)
+    - **Vector Scale**: 1.0 (adjust if vectors appear too large or small)
+    - **Width**: 3.0 (thicker line for better visibility)
+    - **Main Color**: Yellow (or your preferred color)
+
+    <Tip>
+      You can save this resource as a `.tres` file for reuse across different nodes and projects.
+    </Tip>
+  </Step>
+
+  <Step title="Test in-game">
+    Press **F5** to run your game. You should now see:
+
+    - A **yellow arrow** showing your velocity vector
+    - A **red line** showing the X component (horizontal velocity)
+    - A **green line** showing the Y component (vertical velocity)
+
+    Try these interactions:
+    - Press **left/right arrow keys** - watch the velocity vector change direction
+    - Press **space** to jump - see the Y component change
+    - Press **Shift + V** to toggle the vector display on/off
+
+    <Warning>
+      If you don't see any vectors, make sure:
+      - Your character has a non-zero velocity
+      - The VectorDisplay2D node is visible (eye icon in scene tree)
+      - Settings → Show Vectors is enabled
+    </Warning>
+  </Step>
+</Steps>
+
+## Understanding What You See
+
+The visualization shows three elements:
+
+<CardGroup cols={3}>
+  <Card title="Main Vector" icon="arrow-right">
+    **Yellow arrow** - The complete velocity vector showing both direction and magnitude
+  </Card>
+  <Card title="X Component" icon="arrows-left-right">
+    **Red line** - Horizontal component of velocity (velocity.x)
+  </Card>
+  <Card title="Y Component" icon="arrows-up-down">
+    **Green line** - Vertical component of velocity (velocity.y)
+  </Card>
+</CardGroup>
+
+## Customize Your Display
+
+Now that you have a basic vector displaying, try these customizations:
+
+<Accordion title="Adjust vector scale">
+  If your vectors appear too small or too large, change the **Vector Scale** setting:
+
+  ```gdscript
+  # In your script, you can also adjust at runtime:
+  $VectorDisplay2D.settings.vector_scale = 2.0  # Make vectors 2x larger
+  ```
+</Accordion>
+
+<Accordion title="Use different length modes">
+  The **Length Mode** controls how vector length is displayed:
+
+  - **Normal**: Shows actual vector magnitude (default)
+  - **Clamp**: Limits maximum length while preserving direction
+  - **Normalize**: All vectors same length, only shows direction
+
+  ```gdscript
+  $VectorDisplay2D.settings.length_mode = "Normalize"
+  $VectorDisplay2D.settings.max_length = 100
+  ```
+</Accordion>
+
+<Accordion title="Change pivot mode">
+  The **Pivot Mode** controls where the vector originates:
+
+  - **Normal**: Vector starts from character position (origin)
+  - **Centered**: Vector is centered on character position
+
+  ```gdscript
+  $VectorDisplay2D.settings.pivot_mode = "Centered"
+  ```
+</Accordion>
+
+<Accordion title="Enable rainbow mode">
+  Rainbow mode colors the vector based on its angle, creating a beautiful spectrum effect:
+
+  ```gdscript
+  $VectorDisplay2D.settings.rainbow = true
+  ```
+</Accordion>
+
+<Accordion title="Add dimming effect">
+  Dimming makes shorter vectors fade to a fallback color:
+
+  ```gdscript
+  $VectorDisplay2D.settings.dimming = true
+  $VectorDisplay2D.settings.dimming_speed = 1.0
+  $VectorDisplay2D.settings.fallback_color = Color.BLACK
+  ```
+</Accordion>
+
+## Visualizing Multiple Vectors
+
+You can add multiple VectorDisplay2D nodes to visualize different properties:
+
+```gdscript player_with_multiple_vectors.gd
+extends CharacterBody2D
+
+var velocity = Vector2.ZERO
+var acceleration = Vector2.ZERO
+var desired_velocity = Vector2.ZERO
+
+func _physics_process(delta):
+    # Calculate acceleration
+    var target_velocity = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down") * 300
+    acceleration = (target_velocity - velocity) / delta
+    
+    # Apply acceleration
+    velocity += acceleration * delta
+    position += velocity * delta
+```
+
+Scene structure:
+```
+CharacterBody2D
+├── VectorDisplay2D (velocity) - Yellow
+├── VectorDisplay2D (acceleration) - Cyan  
+└── VectorDisplay2D (desired_velocity) - Magenta
+```
+
+## Runtime Toggling
+
+The default **Shift + V** shortcut toggles all vector displays. This is perfect for:
+
+- Debugging during development
+- Comparing different states
+- Creating tutorial modes
+- Performance profiling
+
+Learn how to [customize keyboard shortcuts](/guides/keyboard-shortcuts).
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Vectors not appearing">
+    **Check these points:**
+    - Target node is set correctly (or auto-assigned to parent)
+    - Target property name matches exactly (case-sensitive)
+    - The property is actually a Vector2 type
+    - The vector has a non-zero magnitude
+    - Settings → Show Vectors is enabled
+  </Accordion>
+
+  <Accordion title="Vectors are too small/large">
+    Adjust the **Vector Scale** setting:
+    ```gdscript
+    $VectorDisplay2D.settings.vector_scale = 2.0  # Increase
+    $VectorDisplay2D.settings.vector_scale = 0.5  # Decrease
+    ```
+    
+    Or use **Length Mode** → Normalize with a fixed max_length.
+  </Accordion>
+
+  <Accordion title="Can't find VectorDisplay2D node">
+    Make sure the plugin is enabled:
+    1. Go to **Project → Project Settings → Plugins**
+    2. Check that **Vector Display 2D** is enabled
+    3. Restart Godot if necessary
+  </Accordion>
+
+  <Accordion title="Error: 'Target property is not a Vector2'">
+    The property you're trying to visualize must be of type Vector2. Check:
+    ```gdscript
+    # ✓ This will work
+    var velocity: Vector2 = Vector2.ZERO
+    
+    # ✗ This won't work
+    var speed: float = 0.0
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book" href="/concepts/how-it-works">
+    Understand how Vector Display 2D works under the hood
+  </Card>
+  <Card title="Customization Guide" icon="palette" href="/guides/customization">
+    Explore all customization options in detail
+  </Card>
+  <Card title="Examples" icon="code" href="/examples/velocity-vectors">
+    See real-world examples and use cases
+  </Card>
+  <Card title="API Reference" icon="terminal" href="/api/vector-display-2d">
+    Complete API documentation for all classes
+  </Card>
+</CardGroup>

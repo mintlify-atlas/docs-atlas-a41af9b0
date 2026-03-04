@@ -1,0 +1,320 @@
+---
+title: Keyboard Shortcuts
+description: Configure and customize the vector display toggle shortcut
+---
+
+Vector Display 2D includes a built-in keyboard shortcut to quickly toggle vector visibility during gameplay. This guide shows you how to use and customize this feature.
+
+## Default Shortcut
+
+The default shortcut to toggle vector visibility is:
+
+<Card title="Shift + V" icon="keyboard">
+  Press **Shift + V** during runtime to show/hide all vector displays.
+</Card>
+
+This shortcut works globally across all VectorDisplay2D nodes in your scene and is perfect for:
+- Quick debugging during playtesting
+- Toggling visualizations without modifying code
+- Demonstrating features in presentations
+- Comparing gameplay with and without vector displays
+
+## How It Works
+
+The shortcut is implemented through a shared `InputEventKey` resource that all VectorDisplay2D nodes reference:
+
+```gdscript
+# From vector_display_settings.gd
+const SHORTCUT: InputEventKey = preload("res://addons/vector_display_2d/display_shortcut.tres")
+```
+
+When pressed, it toggles the `show_vectors` property:
+
+```gdscript
+# From vector_display_functions.gd
+static func check_shortcut(event: InputEvent, settings: VectorDisplaySettings) -> bool:
+    if event.is_pressed() and not event.is_echo() and event.is_match(settings.SHORTCUT):
+        settings.show_vectors = not settings.show_vectors
+        return true
+    return false
+```
+
+<Note>
+  The shortcut affects **all** VectorDisplay2D nodes simultaneously since they share the same settings resource or check the same SHORTCUT constant.
+</Note>
+
+## Customizing the Shortcut
+
+You can change the shortcut by editing the `display_shortcut.tres` resource file.
+
+<Steps>
+  <Step title="Locate the shortcut file">
+    Navigate to the Vector Display 2D addon folder:
+
+    ```
+    res://addons/vector_display_2d/display_shortcut.tres
+    ```
+
+    <Tip>
+      Use the FileSystem dock in Godot Editor and search for "display_shortcut.tres"
+    </Tip>
+  </Step>
+
+  <Step title="Open in Inspector">
+    Click on `display_shortcut.tres` to open it in the Inspector panel.
+
+    You'll see an `InputEventKey` resource with these properties:
+    - **Device**: -1 (all devices)
+    - **Shift Pressed**: true
+    - **Keycode**: 86 (V key)
+    - **Unicode**: 86
+  </Step>
+
+  <Step title="Modify the key binding">
+    Change the properties to your preferred shortcut:
+
+    **Example 1: Change to Shift + D (Debug)**
+    ```
+    Device: -1
+    Shift Pressed: true
+    Keycode: 68  # D key
+    Unicode: 68
+    ```
+
+    **Example 2: Change to Ctrl + V**
+    ```
+    Device: -1
+    Ctrl Pressed: true
+    Shift Pressed: false
+    Keycode: 86  # V key
+    Unicode: 86
+    ```
+
+    **Example 3: Change to F9 (no modifiers)**
+    ```
+    Device: -1
+    Shift Pressed: false
+    Keycode: 4194378  # F9 key
+    Unicode: 0
+    ```
+  </Step>
+
+  <Step title="Save the resource">
+    Press **Ctrl + S** or use **File > Save** to save your changes.
+
+    The new shortcut takes effect immediately in your running game.
+  </Step>
+</Steps>
+
+## Finding Keycodes
+
+To find the keycode for any key:
+
+<Tabs>
+  <Tab title="Method 1: Input Map">
+    1. Go to **Project > Project Settings > Input Map**
+    2. Create a temporary action
+    3. Click the "+" button and select "Key"
+    4. Press your desired key
+    5. The keycode will be shown in the event details
+  </Tab>
+
+  <Tab title="Method 2: Script Test">
+    Create a temporary script:
+
+    ```gdscript
+    extends Node
+
+    func _input(event):
+        if event is InputEventKey and event.pressed:
+            print("Key: ", event.as_text())
+            print("Keycode: ", event.keycode)
+            print("Unicode: ", event.unicode)
+    ```
+
+    Run the scene and press your desired key to see its keycode in the Output panel.
+  </Tab>
+
+  <Tab title="Method 3: Common Keys">
+    Common keycodes:
+
+    | Key | Keycode |
+    |-----|--------|
+    | A-Z | 65-90 |
+    | 0-9 | 48-57 |
+    | F1-F12 | 4194370-4194381 |
+    | Space | 32 |
+    | Enter | 4194309 |
+    | Tab | 4194306 |
+    | Escape | 4194305 |
+  </Tab>
+</Tabs>
+
+## Advanced Customization
+
+### Using Project Input Actions
+
+For more flexibility, you can modify the addon to use your project's Input Map:
+
+<Warning>
+  This requires modifying addon source code, which may complicate updates. Consider copying the addon to a custom namespace first.
+</Warning>
+
+<Steps>
+  <Step title="Create an Input Action">
+    1. Go to **Project > Project Settings > Input Map**
+    2. Add a new action: `toggle_vector_display`
+    3. Bind your preferred key(s)
+  </Step>
+
+  <Step title="Modify the shortcut check">
+    Edit `vector_display_2d.gd` to use your action:
+
+    ```gdscript
+    # Replace the _unhandled_key_input function
+    func _unhandled_key_input(event: InputEvent) -> void:
+        if event.is_action_pressed("toggle_vector_display"):
+            settings.show_vectors = not settings.show_vectors
+            get_viewport().set_input_as_handled()
+    ```
+  </Step>
+</Steps>
+
+This approach allows you to:
+- Use multiple key bindings
+- Configure separately for different input devices
+- Leverage Godot's built-in input remapping features
+
+### Per-Node Shortcuts
+
+If you want different shortcuts for different vector displays:
+
+```gdscript
+# Custom script for specific VectorDisplay2D node
+extends VectorDisplay2D
+
+func _input(event):
+    # Custom shortcut for this specific display
+    if event.is_action_pressed("toggle_velocity_display"):
+        settings.show_vectors = !settings.show_vectors
+        get_viewport().set_input_as_handled()
+```
+
+### Conditional Shortcuts
+
+Disable shortcuts in certain game states:
+
+```gdscript
+# In your game manager or autoload
+var allow_debug_shortcuts = true
+
+func _ready():
+    # Disable shortcuts in release builds
+    if not OS.is_debug_build():
+        allow_debug_shortcuts = false
+
+# In a custom VectorDisplay2D script
+func _unhandled_key_input(event: InputEvent) -> void:
+    if not GameManager.allow_debug_shortcuts:
+        return
+    
+    if VectorDisplayFunctions.check_shortcut(event, settings):
+        get_viewport().set_input_as_handled()
+```
+
+## Shortcut Examples
+
+### Example Configurations
+
+<Tabs>
+  <Tab title="Developer Friendly">
+    **F5** - Conflicts less with text editing
+
+    ```
+    display_shortcut.tres:
+    Device: -1
+    Shift Pressed: false
+    Keycode: 4194376  # F5
+    ```
+  </Tab>
+
+  <Tab title="Presentation Mode">
+    **Ctrl + Alt + V** - Harder to press accidentally
+
+    ```
+    display_shortcut.tres:
+    Device: -1
+    Ctrl Pressed: true
+    Alt Pressed: true
+    Keycode: 86  # V
+    ```
+  </Tab>
+
+  <Tab title="Gamepad Support">
+    Use an Input Action instead:
+
+    ```gdscript
+    # Input Map action: "toggle_vectors"
+    # Bindings: Shift+V (keyboard) + Select button (gamepad)
+    
+    func _unhandled_input(event: InputEvent) -> void:
+        if event.is_action_pressed("toggle_vectors"):
+            settings.show_vectors = !settings.show_vectors
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+**Shortcut not working?**
+
+<AccordionGroup>
+  <Accordion title="Check if input is being handled elsewhere">
+    Another node might be consuming the input event. Check your `_input()` or `_unhandled_input()` functions.
+
+    ```gdscript
+    # Make sure you're not calling this for the shortcut key:
+    get_viewport().set_input_as_handled()
+    ```
+  </Accordion>
+
+  <Accordion title="Verify the resource is saved">
+    Ensure you saved `display_shortcut.tres` after editing. Check the file in a text editor:
+
+    ```
+    [gd_resource type="InputEventKey" format=3]
+
+    [resource]
+    device = -1
+    shift_pressed = true
+    keycode = 86
+    unicode = 86
+    ```
+  </Accordion>
+
+  <Accordion title="Check modifier keys">
+    Ensure all modifiers match exactly:
+    - `shift_pressed`
+    - `ctrl_pressed`
+    - `alt_pressed`
+    - `meta_pressed` (Command on Mac)
+  </Accordion>
+
+  <Accordion title="Test in isolation">
+    Create a minimal test scene with only a VectorDisplay2D node to verify the shortcut works.
+  </Accordion>
+</AccordionGroup>
+
+**Shortcut works but toggles twice?**
+
+You might have multiple VectorDisplay2D nodes or duplicate input handlers. The shortcut should only toggle once globally.
+
+**Want different shortcuts for different displays?**
+
+See the "Per-Node Shortcuts" section above for custom implementations.
+
+## Next Steps
+
+- Learn about [runtime configuration](/guides/runtime-configuration) for programmatic control
+- Explore [customization options](/guides/customization) to style your vectors
+- Create [presets](/guides/presets) for different visualization modes
