@@ -1,0 +1,103 @@
+{
+  "projectType": "framework",
+  "projectName": "Vector Display 2D",
+  "projectDescription": "Godot addon to visualize 2D vectors directly in your game with extensive customization and excellent performance.",
+  "theme": "palm",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/how-it-works",
+              "concepts/vector-display-node",
+              "concepts/settings-resource"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/basic-setup",
+              "guides/customization",
+              "guides/runtime-configuration",
+              "guides/keyboard-shortcuts",
+              "guides/presets"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/velocity-vectors",
+              "examples/acceleration-vectors",
+              "examples/custom-styling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Classes",
+            "pages": [
+              "api/vector-display-2d",
+              "api/vector-display-settings",
+              "api/vector-display-functions"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "api/rendering-options",
+              "api/color-options",
+              "api/pivot-modes"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Real-time 2D vector visualization in Godot games",
+    "Customizable colors with rainbow and dimming effects",
+    "Multiple pivot modes and length rendering options",
+    "Runtime configuration with VectorDisplaySettings resources",
+    "Arrowhead rendering for vector direction clarity",
+    "Performance-optimized with smart redraw detection",
+    "Keyboard shortcut toggling (Shift + V)",
+    "Shareable preset system via resource files"
+  ],
+  "publicApiSurface": [
+    "VectorDisplay2D (custom Node2D)",
+    "VectorDisplaySettings (Resource)",
+    "VectorDisplayFunctions (static utility class)",
+    "target_node (export property)",
+    "target_property (export property)",
+    "settings (export property)",
+    "show_vectors (setting)",
+    "show_axes (setting)",
+    "vector_scale (setting)",
+    "width (setting)",
+    "length_mode (setting)",
+    "pivot_mode (setting)",
+    "arrowhead (setting)",
+    "main_color (setting)",
+    "x_axis_color (setting)",
+    "y_axis_color (setting)",
+    "rainbow (setting)",
+    "dimming (setting)"
+  ]
+}
